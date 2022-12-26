@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>Dora_the_Mug_Finder_bringup</name>
+  <name>dora_the_mug_finder_bringup</name>
   <version>0.0.0</version>
   <description>The Dora_the_Mug_Finder_bringup package</description>
 

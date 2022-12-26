@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(Dora_the_Mug_Finder_bringup)
+project(dora_the_mug_finder_bringup)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
