@@ -39,7 +39,7 @@ def main():
     # ------------------------------------------
     print("Load a ply point cloud, print it, and render it")
 
-    point_cloud = o3d.io.read_point_cloud(path + '/src/abc.ply')
+    point_cloud = o3d.io.read_point_cloud(path + '/src/01.ply')
 
     o3d.visualization.draw_geometries([point_cloud],
                                     zoom=view['trajectory'][0]['zoom'],
