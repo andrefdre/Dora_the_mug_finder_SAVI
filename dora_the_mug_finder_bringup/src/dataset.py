@@ -18,10 +18,10 @@ class Dataset(torch.utils.data.Dataset):
             label = self.getClassFromFilename(image_filename)
             self.labels.append(label)
 
+        # Creates a list with unique values
+        classes_list = list(set(self.labels))
 
-        auxiliaryList = list(set(self.labels))
-
-        print(auxiliaryList)
+        print(classes_list)
         # Create a set of transformations
         self.transforms = transforms.Compose([
             transforms.Resize((224,224)),
@@ -39,8 +39,10 @@ class Dataset(torch.utils.data.Dataset):
         image_pill = Image.open(self.image_filenames[index])
 
         image_t= self.transforms(image_pill)
+
+        label = self.labels[index]
         
-        return image_t , index
+        return image_t , label
        
     def __len__(self):
         return self.num_images
