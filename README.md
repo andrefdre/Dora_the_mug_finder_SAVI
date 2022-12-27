@@ -82,7 +82,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 <div align="center">
-<img  src="Docs/logo_png.png" alt="Logo" width="400" height="300">
+<img  src="Docs/logo.svg" alt="Logo" width="400">
 </div>
 
 This project was developed for Advanced Vision Systems class for the second report. The objective is to detect and extract objects from a point cloud and then pass it through a classifier that will tell what the object is and some information about it's physical characteristics, for example it's a Mug and has a certain bounding box.  
