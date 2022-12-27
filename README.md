@@ -91,7 +91,7 @@ This project was developed for Advanced Vision Systems class for the second repo
 
 
 
-<!-- ### Built With -->
+### Built With
 
 <!-- * [![Next][Next.js]][Next-url]
 * [![React][React.js]][React-url]
