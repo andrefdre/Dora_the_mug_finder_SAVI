@@ -10,8 +10,7 @@ project(dora_the_mug_finder_bringup)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
-  std_msg
-  tf
+  std_msgs
 )
 
 ## System dependencies are found with CMake's conventions
