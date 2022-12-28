@@ -13,12 +13,12 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from colorama import Fore, Style
 import torch
-from utils import resumeTraining
 
 from dataset import Dataset
 from classification_visualizer import ClassificationVisualizer
 from data_visualizer import DataVisualizer
 from model import Model
+from utils import SaveModel
 
 
 
@@ -126,7 +126,7 @@ def main():
 
     # Resume training
     if os.path.exists(f'{files_path}/models/{args["folder_name"]}'): # Checks to see if the model exists
-        print(f'Folder already exists! Do you want to resume training?')
+        print(Fore.YELLOW + f'Folder already exists! Do you want to resume training?' + Style.RESET_ALL)
         ans = input("YES/no")
         if ans.lower() in ['', 'yes','y']:
             checkpoint = torch.load(model_path)
@@ -140,12 +140,12 @@ def main():
             print(f'{Fore.RED} Terminating training... {Fore.RESET}')
             exit(0)
     else:
-        print(f'Model Folder not found: {args["folder_name"]}. Starting from sratch.')
+        print(Fore.YELLOW + f'Model Folder not found: {args["folder_name"]}. Starting from sratch.' + Style.RESET_ALL)
         os.makedirs(f'{files_path}/models/{args["folder_name"]}')
         idx_epoch = 0
         epoch_train_losses = []
         epoch_test_losses = []
-        stored_train_loss=0
+        stored_train_loss=1e10
     # -----------
 
     model.to(device) # move the model variable to the gpu if one exists
@@ -209,29 +209,32 @@ def main():
         # Checkpoint            #
         #########################
         if idx_epoch%10==0:
+            print(Fore.CYAN + 'Verifying if the new model is better than the previous one stored' + Style.RESET_ALL)
             if epoch_train_loss < stored_train_loss: # checks if the previous model is better than the new one
                 print(Fore.BLUE + 'Saving model at Epoch ' + str(idx_epoch) + ' Loss ' + str(epoch_train_loss) + Style.RESET_ALL)
 
                 # Save checkpoint
-                model.to('cpu')
+                SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,model_path,device)
                 stored_train_loss=epoch_train_loss
-                torch.save({
-                    'epoch': idx_epoch,
-                    'model_state_dict': model.state_dict(),
-                    'optimizer_state_dict': optimizer.state_dict(),
-                    'train_losses': epoch_train_losses,
-                    'test_losses': epoch_test_losses,
-                    }, model_path)
-                model.to(device)
+                
+            else: 
+                print(Fore.BLUE + 'Not saved, current loos '+ str(epoch_train_loss) + '. Previous model is better, previous loss ' + str(stored_train_loss) + '.' + Style.RESET_ALL)
+
+        # Termination criteria
+        if idx_epoch >= maximum_num_epochs:
+            print(Fore.CYAN + 'Finished training. Reached maximum number of epochs. Comparing to previously stored model' + Style.RESET_ALL)
+            if epoch_train_loss < stored_train_loss:
+                print(Fore.BLUE + 'Saving model at Epoch ' + str(idx_epoch) + ' Loss ' + str(epoch_train_loss) + Style.RESET_ALL)
+                SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,model_path,device)
+            break
+        elif epoch_train_loss <= termination_loss_threshold:
+            print(Fore.CYAN + 'Finished training. Reached target loss. Comparing to previously stored model' + Style.RESET_ALL)
+            if epoch_train_loss < stored_train_loss:
+                print(Fore.BLUE + 'Saving model at Epoch ' + str(idx_epoch) + ' Loss ' + str(epoch_train_loss) + Style.RESET_ALL)
+                SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,model_path,device)
+            break
 
         idx_epoch += 1 # go to next epoch
-        # Termination criteria
-        if idx_epoch > maximum_num_epochs:
-            print('Finished training. Reached maximum number of epochs.')
-            break
-        elif epoch_train_loss < termination_loss_threshold:
-            print('Finished training. Reached target loss.')
-            break
 
 if __name__ == '__main__':
     main()
