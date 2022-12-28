@@ -25,10 +25,9 @@ from utils import SaveModel
 
 # Main code
 def main():
-    # -----------------------------------------------------------------
-    # Initialization
-    # -----------------------------------------------------------------
-    # Argument list
+    ########################################
+    # Initialization                       #
+    ########################################
     parser = argparse.ArgumentParser(description='Data Collector')
     parser.add_argument('-p', '--prev', default=False, choices=('True','False'),
                         help='Pre visualize dataset')
