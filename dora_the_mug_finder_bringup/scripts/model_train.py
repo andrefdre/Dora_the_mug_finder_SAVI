@@ -18,7 +18,7 @@ from dataset import Dataset
 from classification_visualizer import ClassificationVisualizer
 from data_visualizer import DataVisualizer
 from model import Model
-from utils import SaveModel
+from utils import SaveModel,SaveGraph
 
 
 
@@ -61,6 +61,7 @@ def main():
 
     # Define hyper parameters
     model_path = files_path + f'/models/{args["folder_name"]}/{args["model_name"]}.pkl'
+    folder_path =files_path + f'/models/{args["folder_name"]}'
     # Checks if the models folder exists if not create
     if not os.path.exists(f'{files_path}/models'):
         os.makedirs(f'{files_path}/models') # Creates the folder
@@ -124,7 +125,7 @@ def main():
         test_visualizer = ClassificationVisualizer('Test Images')
 
     # Resume training
-    if os.path.exists(f'{files_path}/models/{args["folder_name"]}'): # Checks to see if the model exists
+    if os.path.exists(folder_path): # Checks to see if the model exists
         print(Fore.YELLOW + f'Folder already exists! Do you want to resume training?' + Style.RESET_ALL)
         ans = input("YES/no")
         if ans.lower() in ['', 'yes','y']:
@@ -140,7 +141,7 @@ def main():
             exit(0)
     else:
         print(Fore.YELLOW + f'Model Folder not found: {args["folder_name"]}. Starting from sratch.' + Style.RESET_ALL)
-        os.makedirs(f'{files_path}/models/{args["folder_name"]}')
+        os.makedirs(folder_path)
         idx_epoch = 0
         epoch_train_losses = []
         epoch_test_losses = []
@@ -216,6 +217,7 @@ def main():
 
                 # Save checkpoint
                 SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,model_path,device) # Saves the model
+                SaveGraph(plt,train_losses,test_losses,folder_path):
                 stored_train_loss=epoch_train_loss
                 
             else: 

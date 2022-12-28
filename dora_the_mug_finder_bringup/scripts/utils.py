@@ -11,3 +11,10 @@ def SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,mod
         'test_losses': epoch_test_losses,
         }, model_path)
     model.to(device)
+
+def SaveGraph(plt,train_losses,test_losses,folder_name):
+    plt.figure()
+    plt.plot(train_losses, label='train loss')
+    plt.plot(test_losses, label='test loss')
+    plt.legend()
+    plt.savefig(f'{folder_name}/losses.png')
