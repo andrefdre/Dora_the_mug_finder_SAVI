@@ -134,6 +134,7 @@ def main():
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             idx_epoch = checkpoint['epoch']
             epoch_train_losses = checkpoint['train_losses']
+            stored_train_loss=epoch_train_loss
             epoch_test_losses = checkpoint['test_losses']
         else:
             print(f'{Fore.RED} Terminating training... {Fore.RESET}')
@@ -144,6 +145,7 @@ def main():
         idx_epoch = 0
         epoch_train_losses = []
         epoch_test_losses = []
+        stored_train_loss=0
     # -----------
 
     model.to(device) # move the model variable to the gpu if one exists
@@ -207,18 +209,20 @@ def main():
         # Checkpoint            #
         #########################
         if idx_epoch%10==0:
-            print(Fore.BLUE + 'Saving model at Epoch ' + str(idx_epoch) + ' Loss ' + str(epoch_train_loss) + Style.RESET_ALL)
+            if epoch_train_loss < stored_train_loss: # checks if the previous model is better than the new one
+                print(Fore.BLUE + 'Saving model at Epoch ' + str(idx_epoch) + ' Loss ' + str(epoch_train_loss) + Style.RESET_ALL)
 
-            # Save checkpoint
-            model.to('cpu')
-            torch.save({
-                'epoch': idx_epoch,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'train_losses': epoch_train_losses,
-                'test_losses': epoch_test_losses,
-                }, model_path)
-            model.to(device)
+                # Save checkpoint
+                model.to('cpu')
+                stored_train_loss=epoch_train_loss
+                torch.save({
+                    'epoch': idx_epoch,
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'train_losses': epoch_train_losses,
+                    'test_losses': epoch_test_losses,
+                    }, model_path)
+                model.to(device)
 
         idx_epoch += 1 # go to next epoch
         # Termination criteria
