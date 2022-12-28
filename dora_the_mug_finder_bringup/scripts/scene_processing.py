@@ -105,7 +105,7 @@ def main():
     #Create a frame with the orthogonal directions
     frame = o3d.geometry.TriangleMesh().create_coordinate_frame(size=0.5, origin=np.array([0., 0., 0.]))
     entities.append(frame)
-
+    
     # Draw bbox
     bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(p.bbox)
     entities.append(bbox_to_draw)
@@ -118,7 +118,7 @@ def main():
     # for object_idx, object in enumerate(objects):
     #     if object_idx == 2:
     #         entities.append(object['points'])
-
+  
     #Draws entities and show PointCloud in the defined view
     o3d.visualization.draw_geometries(entities,
                                     zoom=view['trajectory'][0]['zoom'],
@@ -126,11 +126,14 @@ def main():
                                     lookat=view['trajectory'][0]['lookat'],
                                     up=view['trajectory'][0]['up'])
 
+    
     # ------------------------------------------
     # Termination
     # ------------------------------------------
     if cv2.waitKey(0) == ord('q'):
         exit()
+
+    
 
 if __name__ == "__main__":
     main()
