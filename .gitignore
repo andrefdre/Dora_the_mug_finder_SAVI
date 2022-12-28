@@ -1,2 +1,4 @@
 .vscode
 Dora_the_mug_finder_SAVI.code-workspace
+dora_the_mug_finder_bringup/src/__pycache__/
+dora_the_mug_finder_bringup/src/__pycache__/dataset.cpython-38.pyc
