@@ -134,7 +134,7 @@ export DORA=/media/andre/Andre/dora_the_mug_finder
 To Train the model run the code:
 
 ```
-rosrun dora_the_mug_finder_bringup main.py -fn <folder_name> -mn <model_name> -n_epochs 50 -batch_size 256 -c 0
+rosrun dora_the_mug_finder_bringup model_train.py -fn <folder_name> -mn <model_name> -n_epochs 50 -batch_size 256 -c 0
 ```
 
 Where the <folder_name> and <model_name> should be replaced by a name for the model. 
