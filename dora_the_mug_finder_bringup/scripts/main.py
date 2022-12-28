@@ -12,8 +12,8 @@ from tqdm import tqdm
 from colorama import Fore, Style
 import torch
 
-from dora_the_mug_finder_bringup.src.dataset import Dataset
-from dora_the_mug_finder_bringup.src.model import Model
+from dora_the_mug_finder_bringup.scripts.dataset import Dataset
+from dora_the_mug_finder_bringup.scripts.model import Model
 
 
 
