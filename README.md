@@ -91,18 +91,18 @@ This project was developed for Advanced Vision Systems class for the second repo
 
 
 
-### Built With
+<!-- ### Built With
 
-<!-- * [![Next][Next.js]][Next-url]
+* [![Next][Next.js]][Next-url]
 * [![React][React.js]][React-url]
 * [![Vue][Vue.js]][Vue-url]
 * [![Angular][Angular.io]][Angular-url]
 * [![Svelte][Svelte.dev]][Svelte-url]
 * [![Laravel][Laravel.com]][Laravel-url]
 * [![Bootstrap][Bootstrap.com]][Bootstrap-url]
-* [![JQuery][JQuery.com]][JQuery-url] -->
+* [![JQuery][JQuery.com]][JQuery-url]
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+<p align="right">(<a href="#readme-top">back to top</a>)</p> -->
 
 
 
@@ -131,10 +131,13 @@ export DORA=/media/andre/Andre/dora_the_mug_finder
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-<!-- Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+To Train the model run the code:
 
-_For more examples, please refer to the [Documentation](https://example.com)_ -->
+```
+rosrun dora_the_mug_finder_bringup main.py -fn <folder_name> -mn <model_name> -n_epochs 50 -batch_size 256 -c 0
+```
 
+Where the <folder_name> and <model_name> should be replaced by a name for the model. 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
@@ -182,9 +185,7 @@ Project Link: [Dora the Mug Finder](https://github.com/andrefdre/Dora_the_mug_fi
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
-* []()
-* []()
-* []()
+* Professor Miguel Oliveira - mriem@ua.pt
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
