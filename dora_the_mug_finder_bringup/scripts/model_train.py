@@ -217,7 +217,7 @@ def main():
 
                 # Save checkpoint
                 SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,model_path,device) # Saves the model
-                SaveGraph(plt,train_losses,test_losses,folder_path):
+                SaveGraph(train_losses,test_losses,folder_path)
                 stored_train_loss=epoch_train_loss
                 
             else: 
