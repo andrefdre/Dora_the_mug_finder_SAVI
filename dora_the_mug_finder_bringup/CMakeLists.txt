@@ -104,7 +104,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES Dora_the_Mug_Finder_bringup
+#  LIBRARIES dora_the_mug_finder_bringup
 #  CATKIN_DEPENDS roscpp rospy std_msg tf
 #  DEPENDS system_lib
 )
