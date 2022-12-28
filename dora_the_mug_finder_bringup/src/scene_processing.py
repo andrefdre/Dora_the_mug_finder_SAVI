@@ -43,7 +43,7 @@ def main():
     # Initialization
     # ------------------------------------------
     p = PointCloudProcessing() #Calls the class 
-    scene_path=f'{os.environ["DORA"]}/01.ply'
+    scene_path=f'{os.environ["DORA"]}rgbd-scenes-v2/pc/01.ply'
     p.loadPointCloud(scene_path) #Gives the filename to class
     
     # ------------------------------------------
@@ -112,7 +112,7 @@ def main():
 
     #Draw objects
     for object in objects:
-        entities.append(object['points'])
+            entities.append(object['points'])
 
     # #Show only object idx = 2
     # for object_idx, object in enumerate(objects):
