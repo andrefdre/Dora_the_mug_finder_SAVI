@@ -76,9 +76,9 @@ def main():
     loss_function = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-    ############################
-    # Dataset                  #
-    ############################
+    ########################################
+    # Dataset                              #
+    ########################################
 
     # Sample ony a few images for develop
     image_filenames = random.sample(image_filenames,k=700)
@@ -93,8 +93,8 @@ def main():
     dataset_test = Dataset(test_image_filenames)
     loader_test = torch.utils.data.DataLoader(dataset=dataset_test, batch_size=args['batch_size'], shuffle=True)
 
-    prev = args['prev']
-    if prev == True:
+    # If the user wants to visualize the labeled dataset then create a plot with some of the images labeled
+    if args['prev'] == True:
         for image_t ,label_t in loader_train:
             num_images = image_t.shape[0]
             image_idxs=random.sample(range(0,num_images),k=25)
@@ -115,11 +115,11 @@ def main():
             plt.show()
 
 
-    ############################
-    # Training                 #
-    ############################
+    ########################################
+    # Training                             #
+    ########################################
     # Init visualization of loss
-    if args['visualize']:
+    if args['visualize']: # Checks if the user wants to visualize the loss
         loss_visualizer = DataVisualizer('Loss')
         loss_visualizer.draw([0,maximum_num_epochs], [termination_loss_threshold, termination_loss_threshold], layer='threshold', marker='--', markersize=1, color=[0.5,0.5,0.5], alpha=1, label='threshold', x_label='Epochs', y_label='Loss')
         test_visualizer = ClassificationVisualizer('Test Images')
@@ -197,7 +197,9 @@ def main():
         epoch_test_loss = mean(test_losses)
         epoch_test_losses.append(epoch_test_loss)
 
-        # Visualization
+        ########################################
+        # Visualization                        #
+        ########################################
         if args['visualize']:
             loss_visualizer.draw(list(range(0, len(epoch_train_losses))), epoch_train_losses, layer='train loss', marker='-', markersize=1, color=[0,0,0.7], alpha=1, label='Train Loss', x_label='Epochs', y_label='Loss')
 
@@ -205,33 +207,35 @@ def main():
 
             loss_visualizer.recomputeAxesRanges()
 
-        #########################
-        # Checkpoint            #
-        #########################
+        ########################################
+        # Checkpoint                           #
+        ########################################
         if idx_epoch%10==0:
             print(Fore.CYAN + 'Verifying if the new model is better than the previous one stored' + Style.RESET_ALL)
             if epoch_train_loss < stored_train_loss: # checks if the previous model is better than the new one
                 print(Fore.BLUE + 'Saving model at Epoch ' + str(idx_epoch) + ' Loss ' + str(epoch_train_loss) + Style.RESET_ALL)
 
                 # Save checkpoint
-                SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,model_path,device)
+                SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,model_path,device) # Saves the model
                 stored_train_loss=epoch_train_loss
                 
             else: 
                 print(Fore.BLUE + 'Not saved, current loos '+ str(epoch_train_loss) + '. Previous model is better, previous loss ' + str(stored_train_loss) + '.' + Style.RESET_ALL)
 
-        # Termination criteria
+        ########################################
+        # Termination criteria                 #
+        ########################################
         if idx_epoch >= maximum_num_epochs:
             print(Fore.CYAN + 'Finished training. Reached maximum number of epochs. Comparing to previously stored model' + Style.RESET_ALL)
             if epoch_train_loss < stored_train_loss:
                 print(Fore.BLUE + 'Saving model at Epoch ' + str(idx_epoch) + ' Loss ' + str(epoch_train_loss) + Style.RESET_ALL)
-                SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,model_path,device)
+                SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,model_path,device) # Saves the model
             break
         elif epoch_train_loss <= termination_loss_threshold:
             print(Fore.CYAN + 'Finished training. Reached target loss. Comparing to previously stored model' + Style.RESET_ALL)
             if epoch_train_loss < stored_train_loss:
                 print(Fore.BLUE + 'Saving model at Epoch ' + str(idx_epoch) + ' Loss ' + str(epoch_train_loss) + Style.RESET_ALL)
-                SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,model_path,device)
+                SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,model_path,device) # Saves the model
             break
 
         idx_epoch += 1 # go to next epoch
