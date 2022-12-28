@@ -13,7 +13,7 @@ import numpy as np
 from matplotlib import cm
 from more_itertools import locate
 import os
-import matplotlib as plt
+import matplotlib.pyplot as plt
 
 from point_cloud_processing_ap1 import PointCloudProcessing
 	
@@ -45,8 +45,8 @@ def main():
     # Initialization
     # ------------------------------------------
     p = PointCloudProcessing() #Calls the class 
-    scene_path=f'{os.environ["DORA"]}rgbd-scenes-v2/pc/01.ply'
-    image_path=f'{os.environ["DORA"]}images'
+    scene_path=f'{os.environ["DORA"]}/rgbd-scenes-v2/pc/03.ply'
+    image_path=f'{os.environ["DORA"]}/images'
     p.loadPointCloud(scene_path) #Gives the filename to class
     
     # ------------------------------------------
@@ -102,11 +102,6 @@ def main():
         d['length'] = abs(bbox_max[0])-abs(bbox_min[0]) #axis x
         d['width'] = abs(bbox_max[1])-abs(bbox_min[1]) #axis y
         d['height'] = abs(bbox_max[2])-abs(bbox_min[2]) #axis z
-        
-        image = d['points'].capture_screen_float_buffer(False)
-        plt.imsave(os.path.join(image_path, '{:05d}.png'.format(d['idx'])),
-                    np.asarray(image),
-                    dpi=1)
                 
         objects.append(d) #Add the dict of this object to the list
        
@@ -117,9 +112,13 @@ def main():
     #Create a list of entities to draw
     entities = []
 
+    vis = o3d.visualization.Visualizer()
+    vis.create_window()
+
     #Create a frame with the orthogonal directions
     frame = o3d.geometry.TriangleMesh().create_coordinate_frame(size=0.5, origin=np.array([0., 0., 0.]))
     entities.append(frame)
+    vis.add_geometry(frame)
     
     # Draw bbox
     bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(p.bbox)
@@ -132,18 +131,25 @@ def main():
 
     #Show only object idx = 2
     for object_idx, object in enumerate(objects):
-        if object_idx == 2:
             print(objects[object_idx]['bbox_obj'])
             bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(objects[object_idx]['bbox_obj'])
             entities.append(bbox_to_draw)
             entities.append(object['points'])
+            vis.add_geometry(bbox_to_draw)
+            vis.add_geometry(object['points'])
+            
     
     #Draws entities and show PointCloud in the defined view
-    o3d.visualization.draw_geometries(entities, 
-                                    zoom=view['trajectory'][0]['zoom'],
-                                    front=view['trajectory'][0]['front'],
-                                    lookat=view['trajectory'][0]['lookat'],
-                                    up=view['trajectory'][0]['up'])
+
+    vis.run()
+    image = vis.capture_screen_float_buffer()
+    plt.imshow(np.asarray(image))
+    plt.show()
+    # o3d.visualization.draw_geometries(entities, 
+    #                                 zoom=view['trajectory'][0]['zoom'],
+    #                                 front=view['trajectory'][0]['front'],
+    #                                 lookat=view['trajectory'][0]['lookat'],
+    #                                 up=view['trajectory'][0]['up'])
 
     
     # ------------------------------------------
