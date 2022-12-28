@@ -2,6 +2,8 @@
 
 import open3d as o3d
 import rospkg
+import numpy as np
+import os
 
 #! Scene is opening with rainbow color instead of normal color
 
@@ -9,7 +11,7 @@ import rospkg
 rospack = rospkg.RosPack()
 rospack.list()
 path = rospack.get_path('dora_the_mug_finder_bringup')
-
+print (path)
 
 view = {
 	"class_name" : "ViewTrajectory",
@@ -37,15 +39,25 @@ def main():
     # ------------------------------------------
     # Initialization
     # ------------------------------------------
-    print("Load a ply point cloud, print it, and render it")
 
-    point_cloud = o3d.io.read_point_cloud(path + '/src/01.ply')
+    path_01 = path + '/src/01.ply'
+
+    print("Load a ply point cloud, print it, and render it")
+ 
+    #point_cloud = o3d.io.read_point_cloud('01.ply')
+    point_cloud_filename = path_01
+    os.system('pcl_ply2pcd ' + point_cloud_filename + ' pcd_point_cloud.pcd')
+    point_cloud = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
+
+    # print(point_cloud.point.diffuse_red)
 
     o3d.visualization.draw_geometries([point_cloud],
                                     zoom=view['trajectory'][0]['zoom'],
                                     front=view['trajectory'][0]['front'],
                                     lookat=view['trajectory'][0]['lookat'],
                                     up=view['trajectory'][0]['up'])
+
+    
 
     # ------------------------------------------
     # Execution
