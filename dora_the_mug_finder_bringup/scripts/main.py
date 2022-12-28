@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
-from dataset import Dataset
+# Imports 
+from dora_the_mug_finder_bringup.src.dataset import Dataset
+from dora_the_mug_finder_bringup.src.model import Model
 import os
 import glob
 import random
@@ -11,7 +13,7 @@ from tqdm import tqdm
 from colorama import Fore, Style
 import torch
 
-
+# Main code
 def main():
     dataset_path=f'{os.environ["DORA"]}/rgbd-dataset'
     image_filenames = glob.glob(dataset_path + '/*/*/*_crop.png')
