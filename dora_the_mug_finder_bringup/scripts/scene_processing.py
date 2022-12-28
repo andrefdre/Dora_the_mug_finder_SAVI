@@ -13,8 +13,10 @@ import numpy as np
 from matplotlib import cm
 from more_itertools import locate
 import os
+import matplotlib as plt
 
 from point_cloud_processing_ap1 import PointCloudProcessing
+	
 
 def main():
 
@@ -44,6 +46,7 @@ def main():
     # ------------------------------------------
     p = PointCloudProcessing() #Calls the class 
     scene_path=f'{os.environ["DORA"]}rgbd-scenes-v2/pc/01.ply'
+    image_path=f'{os.environ["DORA"]}images'
     p.loadPointCloud(scene_path) #Gives the filename to class
     
     # ------------------------------------------
@@ -78,7 +81,6 @@ def main():
 
     #Create the objects list
     objects = []
-
     #Here we find the points for each object and reunite them 
     for object_idx in object_idxs:
 
@@ -93,8 +95,21 @@ def main():
         # d['color'] = colormap[object_idx, 0:3]
         # d['points'].paint_uniform_color(d['color']) #Paints the point in the defined color
         d['center'] = d['points'].get_center()
+        d['bbox_obj'] = d['points'].get_axis_aligned_bounding_box()
+        
+        bbox_max = d['points'].get_max_bound()
+        bbox_min = d['points'].get_min_bound()
+        d['length'] = abs(bbox_max[0])-abs(bbox_min[0]) #axis x
+        d['width'] = abs(bbox_max[1])-abs(bbox_min[1]) #axis y
+        d['height'] = abs(bbox_max[2])-abs(bbox_min[2]) #axis z
+        
+        image = d['points'].capture_screen_float_buffer(False)
+        plt.imsave(os.path.join(image_path, '{:05d}.png'.format(d['idx'])),
+                    np.asarray(image),
+                    dpi=1)
+                
         objects.append(d) #Add the dict of this object to the list
-
+       
     # ------------------------------------------
     # Visualization
     # ------------------------------------------
@@ -109,18 +124,22 @@ def main():
     # Draw bbox
     bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(p.bbox)
     entities.append(bbox_to_draw)
+    
 
-    #Draw objects
-    for object in objects:
-            entities.append(object['points'])
-
-    # #Show only object idx = 2
-    # for object_idx, object in enumerate(objects):
-    #     if object_idx == 2:
+    # #Draw objects
+    # for object in objects:
     #         entities.append(object['points'])
-  
+
+    #Show only object idx = 2
+    for object_idx, object in enumerate(objects):
+        if object_idx == 2:
+            print(objects[object_idx]['bbox_obj'])
+            bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(objects[object_idx]['bbox_obj'])
+            entities.append(bbox_to_draw)
+            entities.append(object['points'])
+    
     #Draws entities and show PointCloud in the defined view
-    o3d.visualization.draw_geometries(entities,
+    o3d.visualization.draw_geometries(entities, 
                                     zoom=view['trajectory'][0]['zoom'],
                                     front=view['trajectory'][0]['front'],
                                     lookat=view['trajectory'][0]['lookat'],
