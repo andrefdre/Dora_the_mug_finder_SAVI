@@ -81,4 +81,5 @@ class PointCloudProcessing():
         self.inliers = self.pcd.select_by_index(inlier_idxs)
         #Outlier is everything else (so that we get the original full point cloud)
         outlier_cloud = self.pcd.select_by_index(inlier_idxs, invert=True)
+
         return outlier_cloud

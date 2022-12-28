@@ -46,13 +46,12 @@ def main():
     # ------------------------------------------
     p = PointCloudProcessing() #Calls the class 
     scene_path=f'{os.environ["DORA"]}/rgbd-scenes-v2/pc/03.ply'
-    image_path=f'{os.environ["DORA"]}/images'
     p.loadPointCloud(scene_path) #Gives the filename to class
     
     # ------------------------------------------
     # Execution
     # ------------------------------------------    
-    p.preProcess(voxel_size=0.01) #PreProcessing
+    p.preProcess(voxel_size=0.0009) #PreProcessing
 
     #?Center the origin in the table
     p.transform(-110, 0, 0, 0, 0, 0) #Rotate in x
@@ -97,8 +96,9 @@ def main():
         d['center'] = d['points'].get_center()
         d['bbox_obj'] = d['points'].get_axis_aligned_bounding_box()
         
+        #Properties of objects (length, width, height)
         bbox_max = d['points'].get_max_bound()
-        bbox_min = d['points'].get_min_bound()
+        bbox_min = d['points'].get_max_extent()
         d['length'] = abs(bbox_max[0])-abs(bbox_min[0]) #axis x
         d['width'] = abs(bbox_max[1])-abs(bbox_min[1]) #axis y
         d['height'] = abs(bbox_max[2])-abs(bbox_min[2]) #axis z
@@ -131,7 +131,6 @@ def main():
 
     #Show only object idx = 2
     for object_idx, object in enumerate(objects):
-            print(objects[object_idx]['bbox_obj'])
             bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(objects[object_idx]['bbox_obj'])
             entities.append(bbox_to_draw)
             entities.append(object['points'])
@@ -145,6 +144,7 @@ def main():
     image = vis.capture_screen_float_buffer()
     plt.imshow(np.asarray(image))
     plt.show()
+
     # o3d.visualization.draw_geometries(entities, 
     #                                 zoom=view['trajectory'][0]['zoom'],
     #                                 front=view['trajectory'][0]['front'],
