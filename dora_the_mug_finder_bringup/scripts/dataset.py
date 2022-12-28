@@ -4,7 +4,8 @@ import numpy as np
 import torch
 from PIL import Image
 from torchvision import transforms
-
+import glob
+import os
 
 class Dataset(torch.utils.data.Dataset):
     def __init__(self,image_filenames):
@@ -12,16 +13,21 @@ class Dataset(torch.utils.data.Dataset):
         self.image_filenames = image_filenames
         self.num_images= len(self.image_filenames)
 
-        self.labels=[]
+        self.labels_string=[]
 
         for image_filename in self.image_filenames:
             label = self.getClassFromFilename(image_filename)
-            self.labels.append(label)
+            self.labels_string.append(label)
 
-        # Creates a list with unique values
-        classes_list = list(set(self.labels))
+        # Gets the list of the items
+        self.classes_list = self.GetClassListFromFolder()
 
-        print(classes_list)
+        # Creates the labels comparing the string of the item with the folder structure
+        self.labels=[]
+        for label in self.labels_string:
+            label_idx=self.classes_list.index(label)
+            self.labels.append(label_idx)
+
         # Create a set of transformations
         self.transforms = transforms.Compose([
             transforms.Resize((224,224)),
@@ -32,6 +38,16 @@ class Dataset(torch.utils.data.Dataset):
         parts = filename.split('/')
         part = parts[6]
         return part
+
+    def GetClassListFromFolder(self):
+        dataset_path=f'{os.environ["DORA"]}/rgbd-dataset'
+        folder_names = glob.glob(dataset_path + '/*')
+        classList=[]
+        for folder_name in folder_names:
+            parts = folder_name.split('/')
+            part = parts[-1]
+            classList.append(part)
+        return classList
 
 
     def __getitem__(self,index): # returns a specific x,y of the datasets

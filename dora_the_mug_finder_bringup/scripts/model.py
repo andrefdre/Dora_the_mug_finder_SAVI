@@ -41,7 +41,7 @@ class Model(nn.Module):
         
         self.fc1 = nn.Linear(3*3*64,10)
         self.dropout = nn.Dropout(0.5)
-        self.fc2 = nn.Linear(10,2)
+        self.fc2 = nn.Linear(10,51)
         self.relu = nn.ReLU()
         
         
