@@ -1,8 +1,7 @@
 #!/usr/bin/python3
 
 # Imports 
-from dora_the_mug_finder_bringup.src.dataset import Dataset
-from dora_the_mug_finder_bringup.src.model import Model
+import argparse
 import os
 import glob
 import random
@@ -12,6 +11,12 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from colorama import Fore, Style
 import torch
+
+from dora_the_mug_finder_bringup.src.dataset import Dataset
+from dora_the_mug_finder_bringup.src.model import Model
+
+
+
 
 # Main code
 def main():
