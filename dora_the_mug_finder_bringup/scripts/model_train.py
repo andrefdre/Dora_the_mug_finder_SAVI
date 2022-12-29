@@ -208,22 +208,6 @@ def main():
             loss_visualizer.recomputeAxesRanges()
 
         ########################################
-        # Checkpoint                           #
-        ########################################
-        if idx_epoch%10==0:
-            print(Fore.CYAN + 'Verifying if the new model is better than the previous one stored' + Style.RESET_ALL)
-            if epoch_train_loss < stored_train_loss: # checks if the previous model is better than the new one
-                print(Fore.BLUE + 'Saving model at Epoch ' + str(idx_epoch) + ' Loss ' + str(epoch_train_loss) + Style.RESET_ALL)
-
-                # Save checkpoint
-                SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,model_path,device) # Saves the model
-                SaveGraph(train_losses,test_losses,folder_path)
-                stored_train_loss=epoch_train_loss
-                
-            else: 
-                print(Fore.BLUE + 'Not saved, current loos '+ str(epoch_train_loss) + '. Previous model is better, previous loss ' + str(stored_train_loss) + '.' + Style.RESET_ALL)
-
-        ########################################
         # Termination criteria                 #
         ########################################
         if idx_epoch >= maximum_num_epochs:
@@ -231,13 +215,31 @@ def main():
             if epoch_train_loss < stored_train_loss:
                 print(Fore.BLUE + 'Saving model at Epoch ' + str(idx_epoch) + ' Loss ' + str(epoch_train_loss) + Style.RESET_ALL)
                 SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,model_path,device) # Saves the model
+                SaveGraph(epoch_train_losses,epoch_test_losses,folder_path)
             break
         elif epoch_train_loss <= termination_loss_threshold:
             print(Fore.CYAN + 'Finished training. Reached target loss. Comparing to previously stored model' + Style.RESET_ALL)
             if epoch_train_loss < stored_train_loss:
                 print(Fore.BLUE + 'Saving model at Epoch ' + str(idx_epoch) + ' Loss ' + str(epoch_train_loss) + Style.RESET_ALL)
                 SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,model_path,device) # Saves the model
+                SaveGraph(epoch_train_losses,epoch_test_losses,folder_path)
             break
+
+        ########################################
+        # Checkpoint                           #
+        ########################################
+        if idx_epoch%10==0:
+            print(Fore.CYAN + 'Verifying if the new model is better than the previous one stored' + Style.RESET_ALL)
+            if epoch_train_loss < stored_train_loss: # checks if the previous model is better than the new one
+                print(Fore.BLUE + 'Saving model at Epoch ' + str(idx_epoch) + ' Loss ' + str(epoch_train_loss) + Style.RESET_ALL)
+                # Save checkpoint
+                SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,model_path,device) # Saves the model
+                SaveGraph(epoch_train_losses,epoch_test_losses,folder_path)
+                stored_train_loss=epoch_train_loss
+                
+            else: 
+                print(Fore.BLUE + 'Not saved, current loos '+ str(epoch_train_loss) + '. Previous model is better, previous loss ' + str(stored_train_loss) + '.' + Style.RESET_ALL)
+
 
         idx_epoch += 1 # go to next epoch
 
