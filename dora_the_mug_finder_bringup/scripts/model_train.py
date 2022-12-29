@@ -41,7 +41,7 @@ def main():
                         help='Batch size')
     parser.add_argument('-c', '--cuda', default=0, type=int,
                         help='Number of cuda device')
-    parser.add_argument('-loss', '--loss_threshold', default=0.01, type=float,
+    parser.add_argument('-loss', '--loss_threshold', default=0.0001, type=float,
                         help='Loss threshold criteria for when to stop')
     parser.add_argument('-lr', '--learning_rate', default=0.001, type=float,
                         help='Learning rate')
