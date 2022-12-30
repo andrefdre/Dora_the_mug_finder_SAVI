@@ -81,7 +81,7 @@ def main():
     ########################################
 
     # Sample ony a few images for develop
-    #image_filenames = random.sample(image_filenames,k=700)
+    image_filenames = random.sample(image_filenames,k=700)
     train_image_filenames,test_image_filenames = train_test_split(image_filenames,test_size=0.2)
 
     # Creates the train dataset
@@ -131,10 +131,11 @@ def main():
         if ans.lower() in ['', 'yes','y']:
             checkpoint = torch.load(model_path)
             model.load_state_dict(checkpoint['model_state_dict'])
+            model.to(device) # move the model variable to the gpu if one exists
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             idx_epoch = checkpoint['epoch']
             epoch_train_losses = checkpoint['train_losses']
-            stored_train_loss=epoch_train_loss
+            stored_train_loss=epoch_train_losses[-1]
             epoch_test_losses = checkpoint['test_losses']
         else:
             print(f'{Fore.RED} Terminating training... {Fore.RESET}')
@@ -146,9 +147,9 @@ def main():
         epoch_train_losses = []
         epoch_test_losses = []
         stored_train_loss=1e10
+        model.to(device) # move the model variable to the gpu if one exists
     # -----------
 
-    model.to(device) # move the model variable to the gpu if one exists
     while True:
         # Train batch by batch -----------------------------------------------
         train_losses = []
@@ -216,6 +217,8 @@ def main():
                 print(Fore.BLUE + 'Saving model at Epoch ' + str(idx_epoch) + ' Loss ' + str(epoch_train_loss) + Style.RESET_ALL)
                 SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,model_path,device) # Saves the model
                 SaveGraph(epoch_train_losses,epoch_test_losses,folder_path)
+            else:
+                print(Fore.BLUE + 'Not saved, current loos '+ str(epoch_train_loss) + '. Previous model is better, previous loss ' + str(stored_train_loss) + '.' + Style.RESET_ALL)
             break
         elif epoch_train_loss <= termination_loss_threshold:
             print(Fore.CYAN + 'Finished training. Reached target loss. Comparing to previously stored model' + Style.RESET_ALL)
@@ -223,6 +226,8 @@ def main():
                 print(Fore.BLUE + 'Saving model at Epoch ' + str(idx_epoch) + ' Loss ' + str(epoch_train_loss) + Style.RESET_ALL)
                 SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,model_path,device) # Saves the model
                 SaveGraph(epoch_train_losses,epoch_test_losses,folder_path)
+            else:
+                print(Fore.BLUE + 'Not saved, current loos '+ str(epoch_train_loss) + '. Previous model is better, previous loss ' + str(stored_train_loss) + '.' + Style.RESET_ALL)
             break
 
         ########################################
