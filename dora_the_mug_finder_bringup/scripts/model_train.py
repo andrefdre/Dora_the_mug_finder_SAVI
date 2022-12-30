@@ -127,8 +127,7 @@ def main():
         loss_visualizer = DataVisualizer('Loss')
         loss_visualizer.draw([0,maximum_num_epochs], [termination_loss_threshold, termination_loss_threshold], layer='threshold', marker='--', markersize=1, color=[0.5,0.5,0.5], alpha=1, label='threshold', x_label='Epochs', y_label='Loss')
         test_visualizer = ClassificationVisualizer('Test Images')
-
-    test_visualizer = ClassificationVisualizer('Test Images')
+        
     # Resume training
     if os.path.exists(folder_path): # Checks to see if the model exists
         print(Fore.YELLOW + f'Folder already exists! Do you want to resume training?' + Style.RESET_ALL)
@@ -197,7 +196,8 @@ def main():
 
             test_losses.append(loss.data.item())
 
-            test_visualizer.draw(image_t, label_t, label_t_predicted)
+            if args['visualize']:
+                test_visualizer.draw(image_t, label_t, label_t_predicted)
 
 
         # Compute the loss for the epoch
