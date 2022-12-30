@@ -14,8 +14,6 @@ def SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,mod
     model.to(device)
 
 def SaveGraph(train_losses,test_losses,folder_name):
-    xs_train=list(range(len(train_losses)))
-    xs_test=list(range(len(test_losses)))
     plt.figure()
     plt.plot(train_losses, label='train loss')
     plt.plot(test_losses, label='test loss')
