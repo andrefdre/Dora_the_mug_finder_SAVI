@@ -5,8 +5,12 @@ from copy import deepcopy
 import open3d as o3d
 import numpy as np
 from matplotlib import cm
+import matplotlib.pyplot as plt
 import os
-from plane_table_detection import PlaneDetection, PlaneTable
+from table_detection import PlaneDetection, PlaneTable, Table
+from more_itertools import locate
+import random
+import math as sqrt
 
 
 view = {
@@ -39,7 +43,7 @@ def main():
     files_path=f'{os.environ["DORA"]}'
     
     # Scene dataset paths
-    filename = files_path + '/rgbd-scenes-v2/pc/04.ply'
+    filename = files_path + '/rgbd-scenes-v2/pc/13.ply'
     
     os.system('pcl_ply2pcd ' + filename + ' pcd_point_cloud.pcd')
     point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
@@ -72,6 +76,13 @@ def main():
     #? find table plane
     plane_table = PlaneTable(planes).planetable()
 
+    #? cluster
+    t = Table()
+    table = t.voxel_dow_sample(plane_table.inlier_cloud)
+    cluster_idxs, object_idxs = t.cluster(table)
+    table = t.table(cluster_idxs, object_idxs, table)
+
+   
     # ------------------------------------------
     # Visualization
     # ------------------------------------------
@@ -79,8 +90,8 @@ def main():
     frame = o3d.geometry.TriangleMesh().create_coordinate_frame(size=3, origin=np.array([0., 0., 0.]))
     entities.append(point_cloud)
     entities.append(frame)
-    
-    #entities.append(plane.inlier_cloud)
+    entities.append(table)
+ 
     o3d.visualization.draw_geometries(entities,
                                     zoom=view['trajectory'][0]['zoom'],
                                     front=view['trajectory'][0]['front'],
