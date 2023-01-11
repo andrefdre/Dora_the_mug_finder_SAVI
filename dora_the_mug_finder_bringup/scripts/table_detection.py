@@ -11,17 +11,22 @@ class PlaneDetection():
     def colorizeInliers(self, r,g,b):
         self.inlier_cloud.paint_uniform_color([r,g,b]) # paints the plane in red
 
-    def segment(self, distance_threshold=0.03, ransac_n=5, num_iterations=50):
+    def segment(self, distance_threshold=0.035, ransac_n=5, num_iterations=50):
 
         #print('Starting plane detection')
-        self.plane_model, inlier_idxs = self.point_cloud.segment_plane(distance_threshold=distance_threshold, 
+        self.plane_model, self.inlier_idxs = self.point_cloud.segment_plane(distance_threshold=distance_threshold, 
                                                     ransac_n=ransac_n,
                                                     num_iterations=num_iterations)
+        # distance_threshold (float) – Max distance a point can be from the plane model, and still be considered an inlier.
+        # ransac_n (int) – Number of initial points to be considered inliers in each iteration.
+        # num_iterations (int) – Number of iterations.
+
+
         [self.a, self.b, self.c, self.d] = self.plane_model
 
-        self.inlier_cloud = self.point_cloud.select_by_index(inlier_idxs)
-        outlier_cloud = self.point_cloud.select_by_index(inlier_idxs, invert=True)
-        return outlier_cloud, inlier_idxs
+        self.inlier_cloud = self.point_cloud.select_by_index(self.inlier_idxs)
+        self.outlier_cloud = self.point_cloud.select_by_index(self.inlier_idxs, invert=True)
+        return self.outlier_cloud
 
 
     def __str__(self):
@@ -30,9 +35,9 @@ class PlaneDetection():
         return text
 
 class PlaneTable():
-    def __init__(self, planes, inlieres):
+    def __init__(self, planes):
         self.planes = planes
-        self.inlieres = inlieres
+        #self.inlieres = inlieres
 
     def planetable(self):
         distd = abs(self.planes[0].d) - abs(self.planes[1].d)
@@ -41,18 +46,18 @@ class PlaneTable():
         if abs(distd) > 0.3:
             # print('plano da mesa e plano chao')
             if distd > 0:
-                plane = self.planes[1]
-                inlier = self.inlieres[1]
+                self.plane = self.planes[1]
+                #inlier = self.inlieres[1]
 
             else:
-                plane = self.planes[0]
-                inlier = self.inlieres[0]     
+                self.plane = self.planes[0]
+                #inlier = self.inlieres[0]     
         else:
-            plane = self.planes[0]
-            inlier = self.inlieres[0]
+            self.plane = self.planes[0]
+            #inlier = self.inlieres[0]
            # print('plano mesa e outro')
         
-        return plane, inlier
+        return self.plane#, inlier
 
     
 class Table():
@@ -61,19 +66,18 @@ class Table():
         pass
 
     def voxel_dow_sample(self,plane,voxel_size=0.005):
-        plane = plane.voxel_down_sample(voxel_size=voxel_size)
-
-        return plane
+        self.down_sampled_plane = plane.voxel_down_sample(voxel_size=voxel_size)
 
     def cluster(self,plane,eps=0.035, min_points=60, print_progress=True):
-        cluster_idxs = list(plane.cluster_dbscan(eps=eps, min_points=min_points, print_progress=print_progress))
-        object_idxs = list(set(cluster_idxs))
-        object_idxs.remove(-1) #Removes -1 cluster ID (-1 are the points not clustered)
+        self.cluster_idxs = list(plane.cluster_dbscan(eps=eps, min_points=min_points, print_progress=print_progress))
+        self.object_idxs = list(set(self.cluster_idxs))
+        self.object_idxs.remove(-1) #Removes -1 cluster ID (-1 are the points not clustered)
 
-        return cluster_idxs, object_idxs
+        #return cluster_idxs, object_idxs
 
     def table(self,cluster_idxs, object_idxs,plane):
         table = []
+        inlier_idxs = []
         num_points = 0
         num_points_list = []
 
