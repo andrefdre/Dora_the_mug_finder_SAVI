@@ -102,11 +102,9 @@ def main():
         tx, ty, tz = table.get_center()
         x, y, z = plane_table.a, plane_table.b, plane_table.c
         
-        # #point_cloud_complet = Transform(0,0,0,-tx,-ty,-tz).translate(point_cloud_complet)
         point_cloud_without_table = Transform(0,0,0,-tx,-ty,-tz).translate(point_cloud_without_table)
         table = Transform(0,0,0,-tx,-ty,-tz).translate(table)
         
-        # #point_cloud_complet = Transform(-x,-y,-z,0,0,0).rotate(point_cloud_complet)
         point_cloud_without_table = Transform(-x,-y,-z,0,0,0).rotate(point_cloud_without_table)
         table = Transform(-x,-y,-z,0,0,0).rotate(table)
     
@@ -114,26 +112,15 @@ def main():
         bbox = Object_detection().bbox(table)
 
 
-        # #? objects + noise
-        # point_cloud_table = deepcopy(point_cloud)
-        # point_cloud_table = point_cloud_table.select_by_index(table_inlier_idxs, invert=True)
-        # #Crops the point cloud inside the bbox and keeps it
+        #? objects + noise
         point_cloud_objects_noise = point_cloud_without_table.crop(bbox)
-        # #point_cloud= point_cloud_complet.select_by_index(inlier_idxs, invert=True)
-
-
+  
         #? objects
         point_cloud_objects_noise.voxel_down_sample(voxel_size=0.5)
         cluster_idxs = list(point_cloud_objects_noise.cluster_dbscan(eps=0.025, min_points=100, print_progress=True))
         
         object_idxs = list(set(cluster_idxs))
         object_idxs.remove(-1) #Removes -1 cluster ID (-1 are the points not clustered)
-
-        number_of_objects = len(object_idxs)
-        # # print(number_of_objects)
-        
-        # # #Color each cluster with a different color using colormap
-        # # # colormap = cm.Pastel1(list(range(0,number_of_objects)))
 
         #Create the objects list
         objects = []
@@ -155,7 +142,6 @@ def main():
             d['bbox_obj'] = d['points'].get_axis_aligned_bounding_box()
             
             #Properties of objects (length, width, height)
-
             bbox_max = d['points'].get_max_bound()
             bbox_min = d['points'].get_min_bound()
             d['x'],d['y'],d['z'] = d['points'].get_center()
@@ -164,10 +150,8 @@ def main():
             d['width'] = abs(abs(bbox_max[1])-abs(bbox_min[1])) #axis y
             d['height'] = abs(abs(bbox_max[2])-abs(bbox_min[2])) #axis z
 
-            print('l: ' + str(d['length']) + 'w: ' + str(d['width']))
-            
-            print(dist)
             if d['z'] > threshold_z and dist < threshold_dist and d['width'] < threshold_width and d['length'] < threshold_length:       
+                # condition of being object: Z center > 0, be close to the reference, not be too big
                 objects.append(d) #Add the dict of this object to the list
         
 
@@ -177,30 +161,15 @@ def main():
         # ------------------------------------------
 
         entities = []
-        entities.append(point_cloud_original)
-    
-        o3d.visualization.draw_geometries(entities,
-                                        zoom=view['trajectory'][0]['zoom'],
-                                        front=view['trajectory'][0]['front'],
-                                        lookat=view['trajectory'][0]['lookat'],
-                                        up=view['trajectory'][0]['up'])
-
-
-
-        entities = []
         for object_idx, object in enumerate(objects):
             bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(objects[object_idx]['bbox_obj'])
             entities.append(object['points'])
             entities.append(bbox_to_draw)
 
-        #entities.append(point_cloud_without_table)
-        #entities.append(point_cloud_objects_noise)
-        entities.append(bbox)
+        #entities.append(bbox)
         entities.append(frame)
-        #entities.append(table)
-        
-        
-    
+
+  
         o3d.visualization.draw_geometries(entities,
                                         zoom=view['trajectory'][0]['zoom'],
                                         front=view['trajectory'][0]['front'],
