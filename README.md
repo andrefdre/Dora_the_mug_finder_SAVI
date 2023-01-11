@@ -171,7 +171,7 @@ Distributed under the GPL License. See `LICENSE.txt` for more information.
 <!-- CONTACT -->
 ## Contact
 
-André Cardoso - andref@ua,pt
+André Cardoso - andref@ua.pt
 
 Tatiana Resende - tatianaresende@ua.pt
 
