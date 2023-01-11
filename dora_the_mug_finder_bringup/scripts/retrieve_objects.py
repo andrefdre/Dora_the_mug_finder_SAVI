@@ -7,9 +7,8 @@
 # --------------------------------------------------
 
 from more_itertools import locate
-from math import acos, sqrt, pi
+from math import sqrt
 from copy import deepcopy
-from matplotlib import cm
 import open3d as o3d
 import numpy as np
 import glob
