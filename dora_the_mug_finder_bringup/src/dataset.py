@@ -6,6 +6,7 @@ from PIL import Image
 from torchvision import transforms
 import glob
 import os
+from utils import GetClassListFromFolder
 
 class Dataset(torch.utils.data.Dataset):
     def __init__(self,image_filenames):
@@ -20,7 +21,7 @@ class Dataset(torch.utils.data.Dataset):
             self.labels_string.append(label)
 
         # Gets the list of the items
-        self.classes_list = self.GetClassListFromFolder()
+        self.classes_list = GetClassListFromFolder()
 
         # Creates the labels comparing the string of the item with the folder structure
         self.labels=[]
@@ -38,16 +39,6 @@ class Dataset(torch.utils.data.Dataset):
         parts = filename.split('/')
         part = parts[6]
         return part
-
-    def GetClassListFromFolder(self):
-        dataset_path=f'{os.environ["DORA"]}/rgbd-dataset'
-        folder_names = glob.glob(dataset_path + '/*')
-        classList=[]
-        for folder_name in folder_names:
-            parts = folder_name.split('/')
-            part = parts[-1]
-            classList.append(part)
-        return classList
 
 
     def __getitem__(self,index): # returns a specific x,y of the datasets

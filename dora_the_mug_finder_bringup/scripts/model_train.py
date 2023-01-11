@@ -14,14 +14,11 @@ from tqdm import tqdm
 from colorama import Fore, Style
 import torch
 
-
 from dora_the_mug_finder_bringup.src.dataset import Dataset
 from dora_the_mug_finder_bringup.src.classification_visualizer import ClassificationVisualizer
 from dora_the_mug_finder_bringup.src.data_visualizer import DataVisualizer
 from dora_the_mug_finder_bringup.src.model import Model
-from dora_the_mug_finder_bringup.src.utils import SaveGraph, SaveModel
-
-
+from dora_the_mug_finder_bringup.src.utils import SaveGraph, SaveModel, GetClassListFromFolder
 
 
 
@@ -31,7 +28,7 @@ def main():
     # Initialization                       #
     ########################################
     parser = argparse.ArgumentParser(description='Data Collector')
-    parser.add_argument('-p', '--prev', default=False, choices=('True','False'),
+    parser.add_argument('-p', '--prev', action='store_true',
                         help='Pre visualize dataset')
     parser.add_argument('-v', '--visualize', action='store_true',
                         help='Visualize the loss')
@@ -43,7 +40,7 @@ def main():
                         help='Batch size')
     parser.add_argument('-c', '--cuda', default=0, type=int,
                         help='Number of cuda device')
-    parser.add_argument('-loss', '--loss_threshold', default=0.0001, type=float,
+    parser.add_argument('-loss', '--loss_threshold', default=0.00001, type=float,
                         help='Loss threshold criteria for when to stop')
     parser.add_argument('-lr', '--learning_rate', default=0.001, type=float,
                         help='Learning rate')
@@ -60,6 +57,8 @@ def main():
     tensor_to_pill_image = transforms.Compose([
         transforms.ToPILImage()
     ])
+
+    class_list=GetClassListFromFolder()
 
     # Define hyper parameters
     model_path = files_path + f'/models/{args["folder_name"]}/{args["model_name"]}.pkl'
@@ -110,7 +109,9 @@ def main():
                 ax.yaxis.set_ticklabels([])
                 ax.xaxis.set_ticks([])
                 ax.yaxis.set_ticks([])
-                label =label_t[image_idx]
+                label_list=label_t.tolist()
+                label =class_list[label_list[image_idx]]
+                print(label)
                 ax.set_xlabel(label)
                 plt.imshow(image)
 
@@ -125,7 +126,7 @@ def main():
         loss_visualizer = DataVisualizer('Loss')
         loss_visualizer.draw([0,maximum_num_epochs], [termination_loss_threshold, termination_loss_threshold], layer='threshold', marker='--', markersize=1, color=[0.5,0.5,0.5], alpha=1, label='threshold', x_label='Epochs', y_label='Loss')
         test_visualizer = ClassificationVisualizer('Test Images')
-
+        
     # Resume training
     if os.path.exists(folder_path): # Checks to see if the model exists
         print(Fore.YELLOW + f'Folder already exists! Do you want to resume training?' + Style.RESET_ALL)
@@ -194,7 +195,9 @@ def main():
 
             test_losses.append(loss.data.item())
 
-            # test_visualizer.draw(image_t, label_t, label_t_predicted)
+            if args['visualize']:
+                test_visualizer.draw(image_t, label_t, label_t_predicted)
+
 
         # Compute the loss for the epoch
         epoch_test_loss = mean(test_losses)
