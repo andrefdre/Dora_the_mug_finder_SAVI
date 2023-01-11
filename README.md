@@ -118,6 +118,7 @@ To use this code first add the next line in the bashrc:
   ```
 #Dora The Mug FInder
 export DORA=/media/andre/Andre/dora_the_mug_finder
+export PYTHONPATH="$PYTHONPATH:/home/andre/catkin_ws/src/Dora_the_mug_finder_SAVI"
   ```
 
 ### Installation
@@ -170,7 +171,7 @@ Distributed under the GPL License. See `LICENSE.txt` for more information.
 <!-- CONTACT -->
 ## Contact
 
-André Cardoso - andref@ua,pt
+André Cardoso - andref@ua.pt
 
 Tatiana Resende - tatianaresende@ua.pt
 
