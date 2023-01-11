@@ -14,7 +14,7 @@ import numpy as np
 import glob
 import os
 
-from table_detection import PlaneDetection, PlaneTable, Table, Transform
+from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Transform
 
 view = {
 	"class_name" : "ViewTrajectory",
