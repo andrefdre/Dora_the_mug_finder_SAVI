@@ -76,7 +76,7 @@ class Table():
         #return cluster_idxs, object_idxs
 
     def table(self,cluster_idxs, object_idxs,plane):
-        table = []
+        self.table = []
         inlier_idxs = []
         num_points = 0
         num_points_list = []
@@ -88,13 +88,39 @@ class Table():
         
             num_points_new = len(object_points.points)
             if num_points_new > num_points:
-                table = object_points
+                self.table = object_points
                 # print('nº point obj 0: ' + str(len(object_points.points)))
 
             num_points_list.append(num_points_new)
             num_points = max(num_points_list)
         
-        return table
+
+    def bbox_table(self,table_algn):
+        self.table_algn = table_algn
+        obb = self.table_algn.get_oriented_bounding_box().get_box_points()
+
+        #First create a point cloud with the vertices of the desired bounding box (it has 8 vertices in 3 dimensions)
+        np_points = np.asarray(obb)
+        
+        #The bbox has it's center on the origin, therefore each vertice will be a combination of x, y and z max and min values
+        idx = 0
+        while True:
+
+            if np_points[idx,2] > 0:
+                np_points[idx,2] = np_points[idx,2]+0.4
+    
+            idx += 1
+
+            if idx == 8:
+                break
+            
+        #Convert from numpy to Open3D
+        bbox_points = o3d.utility.Vector3dVector(np_points) 
+
+        #Create Axis Aligned Bounding Box from points
+        self.bbox = o3d.geometry.AxisAlignedBoundingBox.create_from_points(bbox_points)
+        self.bbox.color = (1, 0, 0) #Colors bbox lines in red
+
 
 class Transform():    
     def __init__(self,x,y,z,tx,ty,tz):

@@ -5,7 +5,6 @@ from copy import deepcopy
 import open3d as o3d
 import numpy as np
 from matplotlib import cm
-#import matplotlib.pyplot as plt
 import os
 from table_detection import PlaneDetection, PlaneTable, Table, Transform
 from object_detection import Object_detection
@@ -60,18 +59,12 @@ def main():
         
         point_cloud_twoplanes = deepcopy(point_cloud_original) 
         number_of_planes = 2
-        #colormap = cm.Set1(list(range(0,number_of_planes)))
         planes = []
         while True: # run consecutive plane detections
 
             plane = PlaneDetection(point_cloud_twoplanes) # create a new plane instance
             point_cloud_twoplanes = plane.segment() # new point cloud are the outliers of this plane detection
     
-            # colorization using a colormap
-            #idx_color = len(planes)
-            #color = colormap[idx_color, 0:3]
-            #plane.colorizeInliers(r=color[0], g=color[1], b=color[2])
-
             planes.append(plane)
 
             if len(planes) >= number_of_planes: # stop detection planes
@@ -95,25 +88,26 @@ def main():
         t = Table()     # object initialization 
         t.voxel_dow_sample(point_cloud_only_table)
         t.cluster(t.down_sampled_plane)
-        table = t.table(t.cluster_idxs, t.object_idxs, t.down_sampled_plane)
+        t.table(t.cluster_idxs, t.object_idxs, t.down_sampled_plane)
 
         #? frame alignment
         frame = o3d.geometry.TriangleMesh().create_coordinate_frame(size=0.5, origin=np.array([0., 0., 0.]))
-        tx, ty, tz = table.get_center()
+        tx, ty, tz = t.table.get_center()
         x, y, z = plane_table.a, plane_table.b, plane_table.c
         
         point_cloud_without_table = Transform(0,0,0,-tx,-ty,-tz).translate(point_cloud_without_table)
-        table = Transform(0,0,0,-tx,-ty,-tz).translate(table)
+        t.table = Transform(0,0,0,-tx,-ty,-tz).translate(t.table)
         
         point_cloud_without_table = Transform(-x,-y,-z,0,0,0).rotate(point_cloud_without_table)
-        table = Transform(-x,-y,-z,0,0,0).rotate(table)
+        t.table = Transform(-x,-y,-z,0,0,0).rotate(t.table)
     
         # #? bbox: table + objects
-        bbox = Object_detection().bbox(table)
 
+        # bbox = Object_detection().bbox(t.table)
+        t.bbox_table(t.table)
 
         #? objects + noise
-        point_cloud_objects_noise = point_cloud_without_table.crop(bbox)
+        point_cloud_objects_noise = point_cloud_without_table.crop(t.bbox)
   
         #? objects
         point_cloud_objects_noise.voxel_down_sample(voxel_size=0.5)
@@ -166,7 +160,7 @@ def main():
             entities.append(object['points'])
             entities.append(bbox_to_draw)
 
-        #entities.append(bbox)
+        entities.append(t.bbox)
         entities.append(frame)
 
   
