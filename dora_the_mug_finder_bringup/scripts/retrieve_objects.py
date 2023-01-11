@@ -45,7 +45,8 @@ def main():
     files_path=f'{os.environ["DORA"]}'
     
     # Scene dataset paths
-    #filename = files_path + '/rgbd-scenes-v2/pc/13.ply'
+    # filenames = []
+    # filenames.append (files_path + '/rgbd-scenes-v2/pc/13.ply')
     filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
 
     for filename in filenames:
@@ -74,19 +75,22 @@ def main():
         # #? find table plane
         plane_table = PlaneTable(planes) # create a new plane_table instance
         plane_table = plane_table.planetable()
+
+
         # properties of the plane_table: .a,.b,.c,.d,
         #                                .inlier_cloud,.inlier_idxs,
         #                                .outlier_cloud
         
 
         #? definition point cloud without table and point cloud only table
-        point_cloud_without_table = deepcopy(plane_table.outlier_cloud)
-        point_cloud_only_table = deepcopy(plane_table.inlier_cloud)
+        #point_cloud_without_table = deepcopy(plane_table.outlier_cloud)
+        #point_cloud_only_table = deepcopy(plane_table.inlier_cloud)
+        plane_table.outlier_cloud = plane_table.outlier_cloud.voxel_down_sample(voxel_size=0.005)
         
 
         #? find table
         t = Table()     # object initialization 
-        t.voxel_dow_sample(point_cloud_only_table)
+        t.voxel_down_sample(plane_table.inlier_cloud,voxel_size=0.005)
         t.cluster(t.down_sampled_plane)
         t.table(t.cluster_idxs, t.object_idxs, t.down_sampled_plane)
 
@@ -96,10 +100,10 @@ def main():
         tx, ty, tz = t.table.get_center()
         x, y, z = plane_table.a, plane_table.b, plane_table.c
         
-        point_cloud_without_table = Transform(0,0,0,-tx,-ty,-tz).translate(point_cloud_without_table)
+        plane_table.outlier_cloud = Transform(0,0,0,-tx,-ty,-tz).translate(plane_table.outlier_cloud)
         t.table = Transform(0,0,0,-tx,-ty,-tz).translate(t.table)
         
-        point_cloud_without_table = Transform(-x,-y,-z,0,0,0).rotate(point_cloud_without_table)
+        plane_table.outlier_cloud = Transform(-x,-y,-z,0,0,0).rotate(plane_table.outlier_cloud)
         t.table = Transform(-x,-y,-z,0,0,0).rotate(t.table)
     
 
@@ -108,13 +112,12 @@ def main():
 
 
         #? objects + noise
-        point_cloud_objects_noise = point_cloud_without_table.crop(t.bbox)
+        point_cloud_objects_noise = plane_table.outlier_cloud.crop(t.bbox)
   
 
         #? objects
-        point_cloud_objects_noise.voxel_down_sample(voxel_size=0.5)
+        #point_cloud_objects_noise = point_cloud_objects_noise.voxel_down_sample(voxel_size=0.0035)
         cluster_idxs = list(point_cloud_objects_noise.cluster_dbscan(eps=0.025, min_points=100, print_progress=True))
-        
         object_idxs = list(set(cluster_idxs))
         object_idxs.remove(-1) #Removes -1 cluster ID (-1 are the points not clustered)
 

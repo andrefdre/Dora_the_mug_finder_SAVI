@@ -65,7 +65,7 @@ class Table():
         super().__init__()
         pass
 
-    def voxel_dow_sample(self,plane,voxel_size=0.005):
+    def voxel_down_sample(self,plane,voxel_size=0.005):
         self.down_sampled_plane = plane.voxel_down_sample(voxel_size=voxel_size)
 
     def cluster(self,plane,eps=0.035, min_points=60, print_progress=True):
