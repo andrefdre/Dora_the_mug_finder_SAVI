@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
 
-from copy import deepcopy
+# --------------------------------------------------
+# Group 3 - Dora The Mug Finder
+# André Cardoso, Fábio Sousa, Tatiana Resende
+# SAVI, January 2023.
+# --------------------------------------------------
 
-import open3d as o3d
-import numpy as np
-from matplotlib import cm
-import os
-from table_detection import PlaneDetection, PlaneTable, Table, Transform
-from object_detection import Object_detection
 from more_itertools import locate
 from math import acos, sqrt, pi
+from copy import deepcopy
+from matplotlib import cm
+import open3d as o3d
+import numpy as np
 import glob
+import os
 
+from table_detection import PlaneDetection, PlaneTable, Table, Transform
 
 view = {
 	"class_name" : "ViewTrajectory",
@@ -33,7 +37,6 @@ view = {
 	"version_minor" : 0
 }
 
-
 def main():
     
     # ------------------------------------------
@@ -54,9 +57,7 @@ def main():
         # Execution
         # ------------------------------------------
 
-        #? find two planes: from the table and another
-        point_cloud = deepcopy(point_cloud_original)
-        
+        #? find two planes: from the table and another        
         point_cloud_twoplanes = deepcopy(point_cloud_original) 
         number_of_planes = 2
         planes = []
@@ -78,17 +79,18 @@ def main():
         #                                .inlier_cloud,.inlier_idxs,
         #                                .outlier_cloud
         
+
         #? definition point cloud without table and point cloud only table
         point_cloud_without_table = deepcopy(plane_table.outlier_cloud)
         point_cloud_only_table = deepcopy(plane_table.inlier_cloud)
         
-        # #point_cloud= point_cloud.select_by_index(inlier_idxs, invert=False)
 
-        # #? find table
+        #? find table
         t = Table()     # object initialization 
         t.voxel_dow_sample(point_cloud_only_table)
         t.cluster(t.down_sampled_plane)
         t.table(t.cluster_idxs, t.object_idxs, t.down_sampled_plane)
+
 
         #? frame alignment
         frame = o3d.geometry.TriangleMesh().create_coordinate_frame(size=0.5, origin=np.array([0., 0., 0.]))
@@ -101,14 +103,15 @@ def main():
         point_cloud_without_table = Transform(-x,-y,-z,0,0,0).rotate(point_cloud_without_table)
         t.table = Transform(-x,-y,-z,0,0,0).rotate(t.table)
     
-        # #? bbox: table + objects
 
-        # bbox = Object_detection().bbox(t.table)
+        #? bbox: table + objects
         t.bbox_table(t.table)
+
 
         #? objects + noise
         point_cloud_objects_noise = point_cloud_without_table.crop(t.bbox)
   
+
         #? objects
         point_cloud_objects_noise.voxel_down_sample(voxel_size=0.5)
         cluster_idxs = list(point_cloud_objects_noise.cluster_dbscan(eps=0.025, min_points=100, print_progress=True))
@@ -116,8 +119,7 @@ def main():
         object_idxs = list(set(cluster_idxs))
         object_idxs.remove(-1) #Removes -1 cluster ID (-1 are the points not clustered)
 
-        #Create the objects list
-        objects = []
+        objects = []    #Create the objects list
         threshold_z = 0
         threshold_dist = 0.7
         threshold_width = 0.7
@@ -149,7 +151,6 @@ def main():
                 objects.append(d) #Add the dict of this object to the list
         
 
-        
         # ------------------------------------------
         # Visualization
         # ------------------------------------------
@@ -160,10 +161,9 @@ def main():
             entities.append(object['points'])
             entities.append(bbox_to_draw)
 
-        entities.append(t.bbox)
+        #entities.append(t.bbox)
         entities.append(frame)
 
-  
         o3d.visualization.draw_geometries(entities,
                                         zoom=view['trajectory'][0]['zoom'],
                                         front=view['trajectory'][0]['front'],
