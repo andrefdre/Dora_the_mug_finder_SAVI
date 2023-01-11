@@ -16,11 +16,9 @@ from colorama import Fore, Style
 import torch
 from PIL import Image
 
-from dataset import Dataset
-from classification_visualizer import ClassificationVisualizer
-from data_visualizer import DataVisualizer
-from model import Model
-from utils import SaveModel,SaveGraph, LoadModel,GetClassListFromFolder
+
+from dora_the_mug_finder_bringup.src.model import Model
+from dora_the_mug_finder_bringup.src.utils import LoadModel,GetClassListFromFolder
 
 
 
