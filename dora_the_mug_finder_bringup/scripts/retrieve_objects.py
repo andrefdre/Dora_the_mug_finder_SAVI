@@ -162,8 +162,8 @@ def main():
             print(x,y,z)
             #bbox_to_draw = o3d.geometry.Lin
             # eSet.create_from_axis_aligned_bounding_box(objects[object_idx]['bbox_obj'])
-            object['points'] = Transform(0,0,3.14,0,0,0).rotate(object['points'])
-            #object['points'] = Transform(0,0,0,tx,ty,tz).translate(object['points'])
+            object['points'] = Transform(x,y,z,0,0,0).rotate(object['points'])
+            object['points'] = Transform(0,0,0,tx,ty,tz).translate(object['points'])
             object['bbox_obj'] = object['points'].get_axis_aligned_bounding_box()
             bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(object['bbox_obj'])
             entities.append(object['points'])
