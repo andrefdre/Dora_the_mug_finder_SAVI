@@ -13,8 +13,11 @@ import open3d as o3d
 import numpy as np
 import glob
 import os
+import sys
 
-from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Transform
+sys.path.append('/home/fabio/catkin_ws/src/Dora_the_mug_finder_SAVI/dora_the_mug_finder_bringup/src')
+
+from table_detection import PlaneDetection, PlaneTable, Table, Transform
 
 view = {
 	"class_name" : "ViewTrajectory",
@@ -45,9 +48,9 @@ def main():
     files_path=f'{os.environ["DORA"]}'
     
     # Scene dataset paths
-    # filenames = []
-    # filenames.append (files_path + '/rgbd-scenes-v2/pc/13.ply')
-    filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
+    filenames = []
+    filenames.append (files_path + '/rgbd-scenes-v2/pc/05.ply')
+    # filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
 
     for filename in filenames:
         os.system('pcl_ply2pcd ' + filename + ' pcd_point_cloud.pcd')
