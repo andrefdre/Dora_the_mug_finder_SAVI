@@ -6,6 +6,7 @@
 # SAVI, January 2023.
 # --------------------------------------------------
 
+import math
 from more_itertools import locate
 from math import sqrt
 from copy import deepcopy
@@ -45,9 +46,9 @@ def main():
     files_path=f'{os.environ["DORA"]}'
     
     # Scene dataset paths
-    # filenames = []
-    # filenames.append (files_path + '/rgbd-scenes-v2/pc/13.ply')
-    filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
+    filenames = []
+    filenames.append (files_path + '/rgbd-scenes-v2/pc/02.ply')
+    #filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
 
     for filename in filenames:
         os.system('pcl_ply2pcd ' + filename + ' pcd_point_cloud.pcd')
@@ -137,7 +138,6 @@ def main():
             d = {}
             d['idx'] = str(object_idx)
             d['points'] = object_points
-            d['bbox_obj'] = d['points'].get_axis_aligned_bounding_box()
             
             #Properties of objects (length, width, height)
             bbox_max = d['points'].get_max_bound()
@@ -159,12 +159,19 @@ def main():
 
         entities = []
         for object_idx, object in enumerate(objects):
-            bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(objects[object_idx]['bbox_obj'])
+            print(x,y,z)
+            #bbox_to_draw = o3d.geometry.Lin
+            # eSet.create_from_axis_aligned_bounding_box(objects[object_idx]['bbox_obj'])
+            object['points'] = Transform(0,0,3.14,0,0,0).rotate(object['points'])
+            #object['points'] = Transform(0,0,0,tx,ty,tz).translate(object['points'])
+            object['bbox_obj'] = object['points'].get_axis_aligned_bounding_box()
+            bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(object['bbox_obj'])
             entities.append(object['points'])
             entities.append(bbox_to_draw)
 
         #entities.append(t.bbox)
         entities.append(frame)
+        entities.append(point_cloud_original)
 
         o3d.visualization.draw_geometries(entities,
                                         zoom=view['trajectory'][0]['zoom'],
