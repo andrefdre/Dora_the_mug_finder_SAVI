@@ -62,6 +62,8 @@ def main():
     for filename in filenames:
         os.system('pcl_ply2pcd ' + filename + ' pcd_point_cloud.pcd')
         point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
+        camera = o3d.io.read_pinhole_camera_parameters(filename)
+        print(camera.intrinsic.intrinsic_matrix)
         
         # ------------------------------------------
         # Execution

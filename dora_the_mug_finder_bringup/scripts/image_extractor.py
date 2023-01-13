@@ -27,9 +27,9 @@ def main():
     width = 0.09574153252956084
     height = 0.1062374627473996
 
-    tx = 0.16958135
-    ty = 0.0836095
-    tz = 0.4559808
+    tx = 0.951682
+    ty = 0.837501
+    tz = 1.22802 
 
     obj0=[ 0.26466404 ,-0.15494963 , 1.44848637]
     obj1=[-0.18527376 ,-0.22413577 , 1.60140775]
@@ -43,18 +43,20 @@ def main():
     points = np.array([obj0, obj1, obj2,obj3,obj4],dtype = np.float64)
 
     # Define the camera intrinsic matrix
-    focal_length = 250
-    principal_point = (178.0, 122.9)
+
     image_size = (640, 480)
 
     # camera_matrix = np.array([[focal_length, 0, principal_point[0]],
     #                           [0, focal_length, principal_point[1]],
     #                           [0, 0, 1]])
 
+    focal_length = 29.1888  # Focal length of the camera
+    principal_point = (640/2, 480/2)  # Principal point of the image (x, y)
 
-    camera_matrix =  np.array([[294.46000792  , 0.0      ,   100.09876624],
-                               [  0.0    ,     256.48642216 , 45.30017389],
-                               [  0.0       ,    0.0     ,      1.0     ]])
+
+    camera_matrix = np.array([[focal_length, 0, principal_point[0]],
+                              [0, focal_length, principal_point[1]],
+                              [0, 0, 1]])
  
 
 
@@ -70,16 +72,16 @@ def main():
 
     # Define the camera extrinsic matrix
 
-    rotation_vector = np.array([-0.42699109,-2.63687232,0.25050348])
-    rotation_matrix = cv2.Rodrigues(rotation_vector)[0]
+    #rotation_vector = np.array([-0.42699109,-2.63687232,0.25050348])
+    #rotation_matrix = cv2.Rodrigues(rotation_vector)[0]
 
-    # rotation_matrix = np.array([[ 1,         0,          0        ],
-    #                             [ 0 ,        -0.36437289 , 0.93125313],
-    #                             [ 0  ,       -0.93125313 ,-0.36437289]])
+    rotation_matrix = np.array([[ 0.853223 ,0.14808 ,-0.500083],
+                                [ 0.277499 ,-0.940751 ,0.194891],
+                                [ -0.441594, -0.305058 ,-0.843762]])
 
-    translation_matrix = np.array([[tx],
-                                   [ty],
-                                   [tz]])
+    translation_matrix = np.array([[1.37552],
+                                   [1.11348],
+                                   [1.53762]])
    
 
     # Project the 3D points to the 2D image plane
@@ -94,9 +96,13 @@ def main():
 
     for filename in filenames:
         image = cv2.imread(filename)
+
+        for point_2d in points_2d:
+            image[point_2d[0][0],point_2d[0][1],0:3]=255
+
         gray = cv2.cvtColor(image,cv2.COLOR_RGB2GRAY)
-        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], camera_matrix, None,flags=1)
-        print(f' {ret} \n {mtx} \n {dist} \n {rvecs} \n {tvecs}' )
+        #ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], camera_matrix, None,flags=1)
+        #print(f' {ret} \n {mtx} \n {dist} \n {rvecs} \n {tvecs}' )
       
     cv2.imshow("window" , image)
     cv2.waitKey(0)
