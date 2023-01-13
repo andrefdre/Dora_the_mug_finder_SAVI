@@ -17,6 +17,15 @@ import os
 
 from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Transform
 
+def keypoints_to_spheres(keypoints):
+    spheres = o3d.geometry.TriangleMesh()
+    for keypoint in keypoints.points:
+        sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.005)
+        sphere.translate(keypoint)
+        spheres += sphere
+    spheres.paint_uniform_color([1.0, 0.75, 0.0])
+    return spheres
+
 view = {
 	"class_name" : "ViewTrajectory",
 	"interval" : 29,
@@ -84,8 +93,6 @@ def main():
         
 
         #? definition point cloud without table and point cloud only table
-        #point_cloud_without_table = deepcopy(plane_table.outlier_cloud)
-        #point_cloud_only_table = deepcopy(plane_table.inlier_cloud)
         plane_table.outlier_cloud = plane_table.outlier_cloud.voxel_down_sample(voxel_size=0.005)
         
 
@@ -117,7 +124,6 @@ def main():
   
 
         #? objects
-        #point_cloud_objects_noise = point_cloud_objects_noise.voxel_down_sample(voxel_size=0.0035)
         cluster_idxs = list(point_cloud_objects_noise.cluster_dbscan(eps=0.025, min_points=100, print_progress=True))
         object_idxs = list(set(cluster_idxs))
         object_idxs.remove(-1) #Removes -1 cluster ID (-1 are the points not clustered)
@@ -165,10 +171,17 @@ def main():
             bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(object['bbox_obj'])
             entities.append(object['points'])
             entities.append(bbox_to_draw)
+            center = object['points'].get_center()
+            sphere =o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
+            sphere.translate(center)
+            entities.append(sphere)
+            print(center)
+            keypoints = o3d.geometry.keypoint.compute_iss_keypoints(object['points'])
+            entities.append(keypoints_to_spheres(keypoints))
 
         #entities.append(t.bbox)
         entities.append(frame)
-        entities.append(point_cloud_original)
+        #entities.append(point_cloud_original)
 
         o3d.visualization.draw_geometries(entities,
                                         zoom=view['trajectory'][0]['zoom'],
