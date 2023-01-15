@@ -62,8 +62,6 @@ def main():
     for filename in filenames:
         os.system('pcl_ply2pcd ' + filename + ' pcd_point_cloud.pcd')
         point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
-        camera = o3d.io.read_pinhole_camera_parameters(filename)
-        print(camera.intrinsic.intrinsic_matrix)
         
         # ------------------------------------------
         # Execution
@@ -178,12 +176,12 @@ def main():
             sphere.translate(center)
             entities.append(sphere)
             print(center)
-            keypoints = o3d.geometry.keypoint.compute_iss_keypoints(object['points'])
-            entities.append(keypoints_to_spheres(keypoints))
+            #keypoints = o3d.geometry.keypoint.compute_iss_keypoints(object['points'])
+            #entities.append(keypoints_to_spheres(keypoints))
 
         #entities.append(t.bbox)
         entities.append(frame)
-        #entities.append(point_cloud_original)
+        entities.append(point_cloud_original)
 
         o3d.visualization.draw_geometries(entities,
                                         zoom=view['trajectory'][0]['zoom'],
