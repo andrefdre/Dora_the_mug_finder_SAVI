@@ -22,7 +22,7 @@ def main():
     
     # Scene dataset paths
     filenames = []
-    filenames.append (files_path + '/rgbd-scenes-v2/imgs/scene_02/00000-color.png')
+    filenames.append (files_path + '/rgbd-scenes-v2/imgs/scene_03/00000-color.png')
 
 
     obj0=[ 0.26466404 ,-0.15494963 , 1.44848637]
@@ -31,7 +31,15 @@ def main():
     obj3=[ 0.24332523, -0.0247561  , 1.1732882 ]
     obj4=[-0.09786274 ,-0.12610798 , 1.12135535]
 
-    points = np.array([obj0, obj1, obj2,obj3,obj4],dtype = np.float64)
+
+    obj0_1 = [ 0.26972195 ,-0.0676526  , 1.1738706 ]
+    obj1_1 = [-0.01215172 ,-0.23067668 , 1.63186339]
+    obj2_1 = [-0.19274 ,   -0.15293952  ,1.36978918]
+    obj3_1 = [-0.45456324 ,-0.10366471 , 1.2772793 ]
+    obj4_1 = [-0.06957649 , 0.02356743 , 0.9336359 ]
+
+
+    points = np.array([obj0_1, obj1_1, obj2_1,obj3_1,obj4_1],dtype = np.float64)
 
     # Camera parameters
     center = [320 , 240]
@@ -41,12 +49,12 @@ def main():
     MM_PER_M = 1000
 
 
-    camera_matrix = np.array([[focal_length, 0, center[0]],
-                              [0, focal_length, center[1]],
-                              [0, 0, 1]])
+    camera_matrix = np.array([[focal_length, 0,            center[0]],
+                              [0,            focal_length, center[1]],
+                              [0,            0,            1]])
 
     # Project the 3D points to the 2D image plane
-    points_2d = cv2.projectPoints(points, np.zeros(3), np.zeros(3), camera_matrix, None,)[0]
+    points_2d = cv2.projectPoints(points, np.identity(3), np.zeros(3), camera_matrix, None,)[0]
     # Scale the points to image pixels
     points_2d = np.round(points_2d).astype(int)
 
@@ -57,7 +65,7 @@ def main():
         image = cv2.imread(filename)
 
         for point_2d in points_2d:
-            image[point_2d[0][0],point_2d[0][1],0:3]=255
+            image[point_2d[0][1],point_2d[0][0],0:3]=255
       
     cv2.imshow("window" , image)
     cv2.waitKey(0)

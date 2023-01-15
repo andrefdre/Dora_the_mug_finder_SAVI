@@ -56,7 +56,7 @@ def main():
     
     # Scene dataset paths
     filenames = []
-    filenames.append (files_path + '/rgbd-scenes-v2/pc/02.ply')
+    filenames.append (files_path + '/rgbd-scenes-v2/pc/03.ply')
     #filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
 
     for filename in filenames:
@@ -173,6 +173,7 @@ def main():
             entities.append(bbox_to_draw)
             center = object['points'].get_center()
             sphere =o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
+            sphere.paint_uniform_color([1.0, 0.75, 0.0])
             sphere.translate(center)
             entities.append(sphere)
             print(center)
