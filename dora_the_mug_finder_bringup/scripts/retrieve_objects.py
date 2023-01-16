@@ -177,7 +177,6 @@ def main():
             entities.append(object['points'])
             entities.append(bbox_to_draw)
             center = object['points'].get_center()
-            print(center)
             point = Point(center[0],center[1],center[2])
             objects_3d.center.append(point)
             sphere =o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
@@ -187,18 +186,18 @@ def main():
 
 
         pub.publish(objects_3d)
-        file_idx+=1
+        #file_idx+=1
         rate.sleep()
 
 
         entities.append(frame)
         entities.append(point_cloud_original)
         
-        o3d.visualization.draw_geometries(entities,
-                                        zoom=view['trajectory'][0]['zoom'],
-                                        front=view['trajectory'][0]['front'],
-                                        lookat=view['trajectory'][0]['lookat'],
-                                        up=view['trajectory'][0]['up'])
+        # o3d.visualization.draw_geometries(entities,
+        #                                 zoom=view['trajectory'][0]['zoom'],
+        #                                 front=view['trajectory'][0]['front'],
+        #                                 lookat=view['trajectory'][0]['lookat'],
+        #                                 up=view['trajectory'][0]['up'])
 
     
 
