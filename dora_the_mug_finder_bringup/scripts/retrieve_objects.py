@@ -226,7 +226,7 @@ def main():
                 sphere.paint_uniform_color([1.0, 0.75, 0.0])
                 sphere.translate(center)
                 entities.append(sphere)
-                print(center)
+                #print(center)
                 #keypoints = o3d.geometry.keypoint.compute_iss_keypoints(object['points'])
                 #entities.append(keypoints_to_spheres(keypoints))
 
