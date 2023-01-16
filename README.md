@@ -123,10 +123,15 @@ export PYTHONPATH="$PYTHONPATH:/home/andre/catkin_ws/src/Dora_the_mug_finder_SAV
 
 ### Installation
 
+The software required to explore the Kinect XBOX 360 must be compiled from sources. You can find the information [here](https://rospibot.azw.pt/ros-noetic-kinect-xbox-360/).
 
+You also need to install Openni and Openni2 using:
+```
+sudo apt-get install ros-<version>-openni-launch
+sudo apt-get install ros-<version>-openni2-launch
+```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 
 
 <!-- USAGE EXAMPLES -->

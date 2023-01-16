@@ -1,0 +1,17 @@
+<launch>
+    <!-- Kinect -->
+    <arg name="frame_id" default="kinect_camera"/>
+
+    <include file="$(find openni_launch)/launch/openni.launch">
+        <arg name="depth_registration" value="true"/>
+      <!--arg name="camera" value="$(arg frame_id)"/-->
+
+
+    </include>
+    <arg name="rvizconfig" default="$(find dora_the_mug_finder_bringup)config/rviz.rviz"/>
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true"/>
+
+ <!--Retrieve objects>
+    <node name="objetcs_retriever" pkg="dora_the_mug_finder_bringup" type="retrieve_objects.py">
+    </node-->
+</launch>
