@@ -8,7 +8,8 @@
 
 import math
 from more_itertools import locate
-from math import sqrt
+from colorama import Fore, Style
+from math import sqrt, pi
 from copy import deepcopy
 import open3d as o3d
 import numpy as np
@@ -26,6 +27,34 @@ def keypoints_to_spheres(keypoints):
     spheres.paint_uniform_color([1.0, 0.75, 0.0])
     return spheres
 
+def text_3d(text, font='/usr/share/fonts/truetype/freefont/FreeMono.ttf', font_size=10):
+    """
+    Generate a 3D text point cloud used for visualization.
+    :param text: content of the text
+    :param font: Name of the font - change it according to your system
+    :param font_size: size of the font
+    :return: o3d.geoemtry.PointCloud object
+    """
+
+    from PIL import Image, ImageFont, ImageDraw
+
+    font_obj = ImageFont.truetype(font, font_size)
+    font_dim = font_obj.getsize(text)
+
+    img = Image.new('RGB', font_dim, color=(255, 255, 255))
+    draw = ImageDraw.Draw(img)
+    draw.text((0, 0), text, font=font_obj, fill=(0, 0, 0))
+    img = np.asarray(img)
+    img_mask = img[:, :, 0] < 128
+    indices = np.indices([*img.shape[0:2], 1])[:, img_mask, 0].reshape(3, -1).T
+
+    pcd = o3d.geometry.PointCloud()
+    pcd.colors = o3d.utility.Vector3dVector(img[img_mask, :].astype(float) / 255.0)
+    pcd.points = o3d.utility.Vector3dVector(indices / 100.0)
+
+    return pcd
+
+
 view = {
 	"class_name" : "ViewTrajectory",
 	"interval" : 29,
@@ -33,13 +62,13 @@ view = {
 	"trajectory" : 
 	[
 		{
-			"boundingbox_max" : [ 0.90000000000000002, 0.90000000000000002, 0.5 ],
-			"boundingbox_min" : [ -0.90000000000000002, -0.90000000000000002, -0.10000000000000003 ],
+			"boundingbox_max" : [ 1.2571436490455929, 0.5, 2.8718910217285156 ],
+			"boundingbox_min" : [ -1.5309394598007202, -2.0348093509674072, -0.029999999999999999 ],
 			"field_of_view" : 60.0,
-			"front" : [ 0.57428340315845261, 0.72415504342386261, 0.38183510307530683 ],
+			"front" : [ 0.11555556622862719, 0.11345331420937423, -0.98680051510347855 ],
 			"lookat" : [ -0.23064077816298553, -0.2045093977126011, 0.17408966530741635 ],
-			"up" : [ -0.36479928025136604, -0.19118507801017759, 0.91124626258455921 ],
-			"zoom" : 0.79999999999999893
+			"up" : [ 0.013560659994457255, -0.99354326124308379, -0.11264056347059027 ],
+			"zoom" : 0.33999999999999853
 		}
 	],
 	"version_major" : 1,
@@ -56,13 +85,36 @@ def main():
     
     # Scene dataset paths
     filenames = []
-    filenames.append (files_path + '/rgbd-scenes-v2/pc/03.ply')
-    #filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
+    #filenames.append (files_path + '/rgbd-scenes-v2/pc/12.ply')
+    filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
 
+    scenes_number_objects = {
+        '01': 5,
+        '02': 5,
+        '03': 5,
+        '04': 5,
+        '05': 4,
+        '06': 5,
+        '07': 5,
+        '08': 4,
+        '09': 3,
+        '10': 3,
+        '11': 3,
+        '12': 3,
+        '13': 4,
+        '14': 4
+    }
+   
     for filename in filenames:
         os.system('pcl_ply2pcd ' + filename + ' pcd_point_cloud.pcd')
         point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
         
+        parts = filename.split('/')
+        part = parts[-1]
+        parts = part.split('.')
+        scene_number = parts[0]
+        scene_number_objects = scenes_number_objects[scene_number]
+    
         # ------------------------------------------
         # Execution
         # ------------------------------------------
@@ -158,10 +210,20 @@ def main():
                 # condition of being object: Z center > 0, be close to the reference, not be too big
                 objects.append(d) #Add the dict of this object to the list
         
-
+        # print('numer of objects (ref): ' +str(scene_number_objects))
+        # print('numer of objects (detected): ' +str(len(objects)))
+        
+        if scene_number_objects != len(objects):
+            print(Fore.RED + 'number of objects is wrong' + Style.RESET_ALL)
+        
         # ------------------------------------------
         # Visualization
         # ------------------------------------------
+        text = 'number of objects: ' + str(scene_number_objects)
+        text_number_objects = text_3d(text, font_size=20)
+        text_number_objects = Transform(-x,y,z,0,0,0).rotate(text_number_objects,letter=True)
+        text_number_objects = Transform(0,0,0,tx-1,ty-1.3,tz).translate(text_number_objects)
+            
 
         entities = []
         for object_idx, object in enumerate(objects):
@@ -181,6 +243,7 @@ def main():
             #entities.append(keypoints_to_spheres(keypoints))
 
         #entities.append(t.bbox)
+        entities.append(text_number_objects)
         entities.append(frame)
         entities.append(point_cloud_original)
 
