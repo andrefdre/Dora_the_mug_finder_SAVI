@@ -8,8 +8,8 @@
 
 from more_itertools import locate
 from colorama import Fore, Style
-from math import sqrt
 from copy import deepcopy
+from math import sqrt
 import open3d as o3d
 import numpy as np
 import argparse
@@ -200,8 +200,8 @@ def main():
         
         if scene_number_objects != len(objects):
             print(Fore.RED + 'number of objects is wrong' + Style.RESET_ALL)
-      
-        
+
+
         # ------------------------------------------
         # Visualization
         # ------------------------------------------
@@ -220,6 +220,7 @@ def main():
                 bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(object['bbox_obj'])
                 entities.append(object['points'])
                 entities.append(bbox_to_draw)
+                
                 center = object['points'].get_center()
                 sphere =o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
                 sphere.paint_uniform_color([1.0, 0.75, 0.0])
