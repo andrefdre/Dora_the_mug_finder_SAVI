@@ -6,17 +6,19 @@
 # SAVI, January 2023.
 # --------------------------------------------------
 
-import math
 from more_itertools import locate
 from colorama import Fore, Style
-from math import sqrt, pi
+from math import sqrt
 from copy import deepcopy
 import open3d as o3d
 import numpy as np
+import argparse
 import glob
+import sys
 import os
 
 from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Transform
+from dora_the_mug_finder_bringup.src.utils import text_3d
 
 def keypoints_to_spheres(keypoints):
     spheres = o3d.geometry.TriangleMesh()
@@ -26,33 +28,6 @@ def keypoints_to_spheres(keypoints):
         spheres += sphere
     spheres.paint_uniform_color([1.0, 0.75, 0.0])
     return spheres
-
-def text_3d(text, font='/usr/share/fonts/truetype/freefont/FreeMono.ttf', font_size=10):
-    """
-    Generate a 3D text point cloud used for visualization.
-    :param text: content of the text
-    :param font: Name of the font - change it according to your system
-    :param font_size: size of the font
-    :return: o3d.geoemtry.PointCloud object
-    """
-
-    from PIL import Image, ImageFont, ImageDraw
-
-    font_obj = ImageFont.truetype(font, font_size)
-    font_dim = font_obj.getsize(text)
-
-    img = Image.new('RGB', font_dim, color=(255, 255, 255))
-    draw = ImageDraw.Draw(img)
-    draw.text((0, 0), text, font=font_obj, fill=(0, 0, 0))
-    img = np.asarray(img)
-    img_mask = img[:, :, 0] < 128
-    indices = np.indices([*img.shape[0:2], 1])[:, img_mask, 0].reshape(3, -1).T
-
-    pcd = o3d.geometry.PointCloud()
-    pcd.colors = o3d.utility.Vector3dVector(img[img_mask, :].astype(float) / 255.0)
-    pcd.points = o3d.utility.Vector3dVector(indices / 100.0)
-
-    return pcd
 
 
 view = {
@@ -80,6 +55,13 @@ def main():
     # ------------------------------------------
     # Initialization
     # ------------------------------------------
+
+    parser = argparse.ArgumentParser(description='Data Collector')
+    parser.add_argument('-v', '--visualize', action='store_true',
+                        help='Visualize the point cloud')
+    
+    arglist = [x for x in sys.argv[1:] if not x.startswith('__')]
+    args = vars(parser.parse_args(args=arglist))
 
     files_path=f'{os.environ["DORA"]}'
     
@@ -119,7 +101,10 @@ def main():
         # Execution
         # ------------------------------------------
 
-        #? find two planes: from the table and another        
+        ########################################
+        # Find two planes                      #
+        ########################################
+        # find two planes: from the table and another        
         point_cloud_twoplanes = deepcopy(point_cloud_original) 
         number_of_planes = 2
         planes = []
@@ -133,29 +118,31 @@ def main():
             if len(planes) >= number_of_planes: # stop detection planes
                 break
 
-    
-        # #? find table plane
+        ########################################
+        # Find table plane                     #
+        ########################################
         plane_table = PlaneTable(planes) # create a new plane_table instance
         plane_table = plane_table.planetable()
-
 
         # properties of the plane_table: .a,.b,.c,.d,
         #                                .inlier_cloud,.inlier_idxs,
         #                                .outlier_cloud
         
 
-        #? definition point cloud without table and point cloud only table
+        # definition point cloud without table and point cloud only table
         plane_table.outlier_cloud = plane_table.outlier_cloud.voxel_down_sample(voxel_size=0.005)
         
-
-        #? find table
+        ########################################
+        # Find plane                           #
+        ########################################
         t = Table()     # object initialization 
         t.voxel_down_sample(plane_table.inlier_cloud,voxel_size=0.005)
         t.cluster(t.down_sampled_plane)
         t.table(t.cluster_idxs, t.object_idxs, t.down_sampled_plane)
 
-
-        #? frame alignment
+        ########################################
+        # Frame alignment                      #
+        ########################################
         frame = o3d.geometry.TriangleMesh().create_coordinate_frame(size=0.5, origin=np.array([0., 0., 0.]))
         tx, ty, tz = t.table.get_center()
         x, y, z = plane_table.a, plane_table.b, plane_table.c
@@ -165,17 +152,17 @@ def main():
         
         plane_table.outlier_cloud = Transform(-x,-y,-z,0,0,0).rotate(plane_table.outlier_cloud)
         t.table = Transform(-x,-y,-z,0,0,0).rotate(t.table)
-    
 
-        #? bbox: table + objects
+        ########################################
+        # Objects                              #
+        ########################################
+        # bbox: table + objects
         t.bbox_table(t.table)
 
-
-        #? objects + noise
+        # objects + noise
         point_cloud_objects_noise = plane_table.outlier_cloud.crop(t.bbox)
   
-
-        #? objects
+        # objects
         cluster_idxs = list(point_cloud_objects_noise.cluster_dbscan(eps=0.025, min_points=100, print_progress=True))
         object_idxs = list(set(cluster_idxs))
         object_idxs.remove(-1) #Removes -1 cluster ID (-1 are the points not clustered)
@@ -210,48 +197,48 @@ def main():
                 # condition of being object: Z center > 0, be close to the reference, not be too big
                 objects.append(d) #Add the dict of this object to the list
         
-        # print('numer of objects (ref): ' +str(scene_number_objects))
-        # print('numer of objects (detected): ' +str(len(objects)))
         
         if scene_number_objects != len(objects):
             print(Fore.RED + 'number of objects is wrong' + Style.RESET_ALL)
+      
         
         # ------------------------------------------
         # Visualization
         # ------------------------------------------
-        text = 'number of objects: ' + str(scene_number_objects)
-        text_number_objects = text_3d(text, font_size=20)
-        text_number_objects = Transform(-x,y,z,0,0,0).rotate(text_number_objects,letter=True)
-        text_number_objects = Transform(0,0,0,tx-1,ty-1.3,tz).translate(text_number_objects)
-            
+        if args['visualize']: # Checks if the user wants to visualize the point cloud
+            text = 'number of objects: ' + str(scene_number_objects)
+            text_number_objects = text_3d(text, font_size=20)
+            text_number_objects = Transform(-x,y,z,0,0,0).rotate(text_number_objects,letter=True)
+            text_number_objects = Transform(0,0,0,tx-1,ty-1.3,tz).translate(text_number_objects)
+                
 
-        entities = []
-        for object_idx, object in enumerate(objects):
-            object['points'] = Transform(-x,y,z,0,0,0).rotate(object['points'],inverse=True)
-            object['points'] = Transform(0,0,0,tx,ty,tz).translate(object['points'])
-            object['bbox_obj'] = object['points'].get_axis_aligned_bounding_box()
-            bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(object['bbox_obj'])
-            entities.append(object['points'])
-            entities.append(bbox_to_draw)
-            center = object['points'].get_center()
-            sphere =o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
-            sphere.paint_uniform_color([1.0, 0.75, 0.0])
-            sphere.translate(center)
-            entities.append(sphere)
-            print(center)
-            #keypoints = o3d.geometry.keypoint.compute_iss_keypoints(object['points'])
-            #entities.append(keypoints_to_spheres(keypoints))
+            entities = []
+            for object_idx, object in enumerate(objects):
+                object['points'] = Transform(-x,y,z,0,0,0).rotate(object['points'],inverse=True)
+                object['points'] = Transform(0,0,0,tx,ty,tz).translate(object['points'])
+                object['bbox_obj'] = object['points'].get_axis_aligned_bounding_box()
+                bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(object['bbox_obj'])
+                entities.append(object['points'])
+                entities.append(bbox_to_draw)
+                center = object['points'].get_center()
+                sphere =o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
+                sphere.paint_uniform_color([1.0, 0.75, 0.0])
+                sphere.translate(center)
+                entities.append(sphere)
+                print(center)
+                #keypoints = o3d.geometry.keypoint.compute_iss_keypoints(object['points'])
+                #entities.append(keypoints_to_spheres(keypoints))
 
-        #entities.append(t.bbox)
-        entities.append(text_number_objects)
-        entities.append(frame)
-        entities.append(point_cloud_original)
+            #entities.append(t.bbox)
+            entities.append(text_number_objects)
+            entities.append(frame)
+            entities.append(point_cloud_original)
 
-        o3d.visualization.draw_geometries(entities,
-                                        zoom=view['trajectory'][0]['zoom'],
-                                        front=view['trajectory'][0]['front'],
-                                        lookat=view['trajectory'][0]['lookat'],
-                                        up=view['trajectory'][0]['up'])
+            o3d.visualization.draw_geometries(entities,
+                                            zoom=view['trajectory'][0]['zoom'],
+                                            front=view['trajectory'][0]['front'],
+                                            lookat=view['trajectory'][0]['lookat'],
+                                            up=view['trajectory'][0]['up'])
 
     
 
