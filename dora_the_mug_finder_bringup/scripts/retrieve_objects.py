@@ -17,6 +17,8 @@ import rospy
 import sys
 from rospy_tutorials.msg import Floats
 from rospy.numpy_msg import numpy_msg
+from std_msgs.msg import Float32MultiArray
+from dora_the_mug_finder_msg.msg import Object , Point
 import numpy
 
 from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Transform
@@ -45,7 +47,7 @@ def main():
     ###########################################
     # Ros Initialization                      #
     ###########################################
-    pub = rospy.Publisher('objects_publisher', numpy_msg(Floats), queue_size=10)
+    pub = rospy.Publisher('objects_publisher', Object, queue_size=10)
     rospy.init_node('objects', anonymous=True)
     rate = rospy.Rate(10) # 10hz
 
@@ -166,7 +168,7 @@ def main():
         # ------------------------------------------
 
         entities = []
-        objects_3d = []
+        objects_3d = Object()
         for object_idx, object in enumerate(objects):
             object['points'] = Transform(-x,y,z,0,0,0).rotate(object['points'],inverse=True)
             object['points'] = Transform(0,0,0,tx,ty,tz).translate(object['points'])
@@ -175,16 +177,16 @@ def main():
             entities.append(object['points'])
             entities.append(bbox_to_draw)
             center = object['points'].get_center()
-            objects_3d.append(center)
+            print(center)
+            point = Point(center[0],center[1],center[2])
+            objects_3d.center.append(point)
             sphere =o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
             sphere.paint_uniform_color([1.0, 0.75, 0.0])
             sphere.translate(center)
             entities.append(sphere)
 
 
-        data = numpy.array([center for center in objects_3d] , dtype=numpy.float32)
-        print(data)
-        pub.publish(data)
+        pub.publish(objects_3d)
         file_idx+=1
         rate.sleep()
 
