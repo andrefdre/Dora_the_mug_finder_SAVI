@@ -131,13 +131,18 @@ class Transform():
         self.ty = ty
         self.tz = tz
 
-    def rotate(self,cloud_points):        
+    def rotate(self,cloud_points , inverse=False):        
         num = np.dot([self.x,self.y,self.z],[0,0,1])
         dem = abs(sqrt(self.x**2+self.y**2+self.z**2))
         xAngle = num/dem
         yAngle = 0 
         zAngle = 0
-        r = xAngle + pi/2 + pi
+        
+        if inverse== False:
+            r = xAngle + pi/2 + pi
+        else:
+            r = xAngle + pi/2
+
         p = yAngle 
         y = zAngle   
     

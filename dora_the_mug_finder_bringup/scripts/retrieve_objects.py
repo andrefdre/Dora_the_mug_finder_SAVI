@@ -6,18 +6,27 @@
 # SAVI, January 2023.
 # --------------------------------------------------
 
+import math
 from more_itertools import locate
 from math import sqrt
 from copy import deepcopy
 import open3d as o3d
 import numpy as np
 import glob
-import os
 import sys
 
 sys.path.append('/home/fabio/catkin_ws/src/Dora_the_mug_finder_SAVI/dora_the_mug_finder_bringup/src')
 
-from table_detection import PlaneDetection, PlaneTable, Table, Transform
+from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Transform
+
+def keypoints_to_spheres(keypoints):
+    spheres = o3d.geometry.TriangleMesh()
+    for keypoint in keypoints.points:
+        sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.005)
+        sphere.translate(keypoint)
+        spheres += sphere
+    spheres.paint_uniform_color([1.0, 0.75, 0.0])
+    return spheres
 
 view = {
 	"class_name" : "ViewTrajectory",
@@ -49,8 +58,8 @@ def main():
     
     # Scene dataset paths
     filenames = []
-    filenames.append (files_path + '/rgbd-scenes-v2/pc/05.ply')
-    # filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
+    filenames.append (files_path + '/rgbd-scenes-v2/pc/03.ply')
+    #filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
 
     for filename in filenames:
         os.system('pcl_ply2pcd ' + filename + ' pcd_point_cloud.pcd')
@@ -86,8 +95,6 @@ def main():
         
 
         #? definition point cloud without table and point cloud only table
-        #point_cloud_without_table = deepcopy(plane_table.outlier_cloud)
-        #point_cloud_only_table = deepcopy(plane_table.inlier_cloud)
         plane_table.outlier_cloud = plane_table.outlier_cloud.voxel_down_sample(voxel_size=0.005)
         
 
@@ -119,7 +126,6 @@ def main():
   
 
         #? objects
-        #point_cloud_objects_noise = point_cloud_objects_noise.voxel_down_sample(voxel_size=0.0035)
         cluster_idxs = list(point_cloud_objects_noise.cluster_dbscan(eps=0.025, min_points=100, print_progress=True))
         object_idxs = list(set(cluster_idxs))
         object_idxs.remove(-1) #Removes -1 cluster ID (-1 are the points not clustered)
@@ -140,7 +146,6 @@ def main():
             d = {}
             d['idx'] = str(object_idx)
             d['points'] = object_points
-            d['bbox_obj'] = d['points'].get_axis_aligned_bounding_box()
             
             #Properties of objects (length, width, height)
             bbox_max = d['points'].get_max_bound()
@@ -162,12 +167,24 @@ def main():
 
         entities = []
         for object_idx, object in enumerate(objects):
-            bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(objects[object_idx]['bbox_obj'])
+            object['points'] = Transform(-x,y,z,0,0,0).rotate(object['points'],inverse=True)
+            object['points'] = Transform(0,0,0,tx,ty,tz).translate(object['points'])
+            object['bbox_obj'] = object['points'].get_axis_aligned_bounding_box()
+            bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(object['bbox_obj'])
             entities.append(object['points'])
             entities.append(bbox_to_draw)
+            center = object['points'].get_center()
+            sphere =o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
+            sphere.paint_uniform_color([1.0, 0.75, 0.0])
+            sphere.translate(center)
+            entities.append(sphere)
+            print(center)
+            #keypoints = o3d.geometry.keypoint.compute_iss_keypoints(object['points'])
+            #entities.append(keypoints_to_spheres(keypoints))
 
         #entities.append(t.bbox)
         entities.append(frame)
+        entities.append(point_cloud_original)
 
         o3d.visualization.draw_geometries(entities,
                                         zoom=view['trajectory'][0]['zoom'],
