@@ -15,10 +15,10 @@ import glob
 import os
 import rospy
 import sys
+from rospy_tutorials.msg import Floats
+from rospy.numpy_msg import numpy_msg
+import numpy
 
-sys.path.append("/home/andre/catkin_ws/src/Dora_the_mug_finder_SAVI")
-
-from dora_the_mug_finder_bringup.msg import Person
 from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Transform
 
 view = {
@@ -45,7 +45,7 @@ def main():
     ###########################################
     # Ros Initialization                      #
     ###########################################
-    pub = rospy.Publisher('objects_publisher', Person, queue_size=10)
+    pub = rospy.Publisher('objects_publisher', numpy_msg(Floats), queue_size=10)
     rospy.init_node('objects', anonymous=True)
     rate = rospy.Rate(10) # 10hz
 
@@ -176,25 +176,22 @@ def main():
             entities.append(bbox_to_draw)
             center = object['points'].get_center()
             objects_3d.append(center)
-            print(objects_3d)
             sphere =o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
             sphere.paint_uniform_color([1.0, 0.75, 0.0])
             sphere.translate(center)
             entities.append(sphere)
 
 
-
-        
-        # hello_str = "hello world %s" % rospy.get_time()
-        #rospy.loginfo(objects_3d)
-        pub.publish(msg.data(Float64MultiArray(objects_3d)))
+        data = numpy.array([center for center in objects_3d] , dtype=numpy.float32)
+        print(data)
+        pub.publish(data)
         file_idx+=1
         rate.sleep()
 
 
         entities.append(frame)
         entities.append(point_cloud_original)
-
+        
         o3d.visualization.draw_geometries(entities,
                                         zoom=view['trajectory'][0]['zoom'],
                                         front=view['trajectory'][0]['front'],
