@@ -33,18 +33,28 @@ def main():
 
 
     obj0_1 = [ 0.26972195 ,-0.0676526  , 1.1738706 ]
+    AxisAlignedBoundingBox_0_1= { min: (0.103711, -0.133947, 1.07396), max: (0.379837, 0.0147909, 1.29347)}
     obj1_1 = [-0.01215172 ,-0.23067668 , 1.63186339]
+    AxisAlignedBoundingBox_1_1= { min: (-0.124774, -0.293254, 1.50998), max: (0.111777, -0.189816, 1.73514)}
     obj2_1 = [-0.19274 ,   -0.15293952  ,1.36978918]
+    AxisAlignedBoundingBox_2_1= { min: (-0.244499, -0.209246, 1.31729), max: (-0.125371, -0.102802, 1.42335)}
     obj3_1 = [-0.45456324 ,-0.10366471 , 1.2772793 ]
+    AxisAlignedBoundingBox_3_1=  { min: (-0.544627, -0.170547, 1.18114), max: (-0.355203, -0.0545037, 1.36349)}
     obj4_1 = [-0.06957649 , 0.02356743 , 0.9336359 ]
+    AxisAlignedBoundingBox_4_1= { min: (-0.144589, -0.0207741, 0.865681), max: (-0.00263497, 0.0830057, 1.01218)}
+
 
 
     points = np.array([obj0_1, obj1_1, obj2_1,obj3_1,obj4_1],dtype = np.float64)
+    bbox_3d = np.array( [[(AxisAlignedBoundingBox_0_1[min][0],AxisAlignedBoundingBox_0_1[max][1],AxisAlignedBoundingBox_0_1[min][2]) , (AxisAlignedBoundingBox_0_1[max][0],AxisAlignedBoundingBox_0_1[min][1],AxisAlignedBoundingBox_0_1[min][2])],
+                        [(AxisAlignedBoundingBox_1_1[min][0],AxisAlignedBoundingBox_1_1[max][1],AxisAlignedBoundingBox_1_1[min][2]) , (AxisAlignedBoundingBox_1_1[max][0],AxisAlignedBoundingBox_1_1[min][1],AxisAlignedBoundingBox_1_1[min][2])],
+                        [(AxisAlignedBoundingBox_2_1[min][0],AxisAlignedBoundingBox_2_1[max][1],AxisAlignedBoundingBox_2_1[min][2]) , (AxisAlignedBoundingBox_2_1[max][0],AxisAlignedBoundingBox_2_1[min][1],AxisAlignedBoundingBox_0_1[min][2])],
+                        [(AxisAlignedBoundingBox_3_1[min][0],AxisAlignedBoundingBox_3_1[max][1],AxisAlignedBoundingBox_3_1[min][2]) , (AxisAlignedBoundingBox_3_1[max][0],AxisAlignedBoundingBox_3_1[min][1],AxisAlignedBoundingBox_0_1[min][2])],
+                        [(AxisAlignedBoundingBox_4_1[min][0],AxisAlignedBoundingBox_4_1[max][1],AxisAlignedBoundingBox_4_1[min][2]) , (AxisAlignedBoundingBox_4_1[max][0],AxisAlignedBoundingBox_4_1[min][1],AxisAlignedBoundingBox_0_1[min][2])]])
+                        
 
     # Camera parameters
     center = [320 , 240]
-    imw=640
-    imh=480
     focal_length = 570.3
     MM_PER_M = 1000
 
@@ -55,17 +65,33 @@ def main():
 
     # Project the 3D points to the 2D image plane
     points_2d = cv2.projectPoints(points, np.identity(3), np.zeros(3), camera_matrix, None,)[0]
+
+    bbox_2d = []
+
+    for corners in bbox_3d:
+        bbox_2d.append(cv2.projectPoints(corners, np.identity(3), np.zeros(3), camera_matrix, None,)[0])
+
     # Scale the points to image pixels
     points_2d = np.round(points_2d).astype(int)
+    bbox_2d = np.round(bbox_2d).astype(int)
 
     # Print the result
     print(points_2d)
+    print(bbox_2d)
+
+    print(bbox_2d[0][0][0])
+    # Blue color in BGR
+    color = (0, 251, 255)
+  
+    # Line thickness of 2 px
+    thickness = 2
 
     for filename in filenames:
         image = cv2.imread(filename)
 
-        for point_2d in points_2d:
-            image[point_2d[0][1],point_2d[0][0],0:3]=255
+        for idx,point_2d in enumerate(points_2d):
+            image[point_2d[0][1]-2:point_2d[0][1]+2,point_2d[0][0]-2:point_2d[0][0]+2]=color
+            image = cv2.rectangle(image, bbox_2d[idx][0][0], bbox_2d[idx][1][0], color, thickness)
       
     cv2.imshow("window" , image)
     cv2.waitKey(0)

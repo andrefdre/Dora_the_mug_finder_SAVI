@@ -6,7 +6,6 @@
 # SAVI, January 2023.
 # --------------------------------------------------
 
-import math
 from more_itertools import locate
 from math import sqrt
 from copy import deepcopy
@@ -14,17 +13,13 @@ import open3d as o3d
 import numpy as np
 import glob
 import os
+import rospy
+import sys
 
+sys.path.append("/home/andre/catkin_ws/src/Dora_the_mug_finder_SAVI")
+
+from dora_the_mug_finder_bringup.msg import Person
 from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Transform
-
-def keypoints_to_spheres(keypoints):
-    spheres = o3d.geometry.TriangleMesh()
-    for keypoint in keypoints.points:
-        sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.005)
-        sphere.translate(keypoint)
-        spheres += sphere
-    spheres.paint_uniform_color([1.0, 0.75, 0.0])
-    return spheres
 
 view = {
 	"class_name" : "ViewTrajectory",
@@ -47,9 +42,15 @@ view = {
 }
 
 def main():
-    
+    ###########################################
+    # Ros Initialization                      #
+    ###########################################
+    pub = rospy.Publisher('objects_publisher', Person, queue_size=10)
+    rospy.init_node('objects', anonymous=True)
+    rate = rospy.Rate(10) # 10hz
+
     # ------------------------------------------
-    # Initialization
+    # Object detection Initialization
     # ------------------------------------------
 
     files_path=f'{os.environ["DORA"]}'
@@ -58,9 +59,10 @@ def main():
     filenames = []
     filenames.append (files_path + '/rgbd-scenes-v2/pc/03.ply')
     #filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
+    file_idx = 0
 
-    for filename in filenames:
-        os.system('pcl_ply2pcd ' + filename + ' pcd_point_cloud.pcd')
+    while not rospy.is_shutdown():
+        os.system('pcl_ply2pcd ' + filenames[file_idx] + ' pcd_point_cloud.pcd')
         point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
         
         # ------------------------------------------
@@ -164,6 +166,7 @@ def main():
         # ------------------------------------------
 
         entities = []
+        objects_3d = []
         for object_idx, object in enumerate(objects):
             object['points'] = Transform(-x,y,z,0,0,0).rotate(object['points'],inverse=True)
             object['points'] = Transform(0,0,0,tx,ty,tz).translate(object['points'])
@@ -172,15 +175,23 @@ def main():
             entities.append(object['points'])
             entities.append(bbox_to_draw)
             center = object['points'].get_center()
+            objects_3d.append(center)
+            print(objects_3d)
             sphere =o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
             sphere.paint_uniform_color([1.0, 0.75, 0.0])
             sphere.translate(center)
             entities.append(sphere)
-            print(center)
-            #keypoints = o3d.geometry.keypoint.compute_iss_keypoints(object['points'])
-            #entities.append(keypoints_to_spheres(keypoints))
 
-        #entities.append(t.bbox)
+
+
+        
+        # hello_str = "hello world %s" % rospy.get_time()
+        #rospy.loginfo(objects_3d)
+        pub.publish(msg.data(Float64MultiArray(objects_3d)))
+        file_idx+=1
+        rate.sleep()
+
+
         entities.append(frame)
         entities.append(point_cloud_original)
 
