@@ -131,15 +131,26 @@ class Transform():
         self.ty = ty
         self.tz = tz
 
-    def rotate(self,cloud_points):        
+    def rotate(self,cloud_points ,inverse=False, letter=False):        
         num = np.dot([self.x,self.y,self.z],[0,0,1])
         dem = abs(sqrt(self.x**2+self.y**2+self.z**2))
         xAngle = num/dem
         yAngle = 0 
         zAngle = 0
-        r = xAngle + pi/2 + pi
-        p = yAngle 
-        y = zAngle   
+        
+        if inverse== True:
+            r = xAngle + pi/2
+        elif letter== True:
+            r = xAngle + pi
+        else:
+            r = xAngle + pi/2 + pi
+
+        p = yAngle
+
+        if letter == False: 
+            y = zAngle 
+        else: 
+            y = zAngle - pi/2 # rotate in blue
     
         rotation = cloud_points.get_rotation_matrix_from_xyz((r,p,y))
         cloud_points.rotate(rotation, center=( self.tx, self.ty, self.tz))

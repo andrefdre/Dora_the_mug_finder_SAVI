@@ -66,8 +66,10 @@ def main():
     model= LoadModel(model_path,model,device)
     model.eval()
 
+    classification=[]
     for image_filename in image_filenames:
         image_pill = Image.open(image_filename)
+    
         
         image_t= PIL_to_Tensor(image_pill)
         image_t = image_t[0:3]
@@ -78,8 +80,33 @@ def main():
 
         output = model(image_t)
         prediction = torch.argmax(output)
-        print(class_list[prediction.data.item()])
+        classification.append(class_list[prediction.data.item()])
 
+    figure = plt.figure("Visualization")
+    plt.axis('off')
+    figure.figure.set_size_inches(10,10)
+    plt.legend(loc='best')
+    plt.clf()
+    
+    for plot_idx, image_idx in enumerate(list(range(len(image_filenames))), start=1):
+    
+        label=classification[image_idx]
+
+        image_pil = Image.open(image_filenames[image_idx])
+
+        ax = figure.figure.add_subplot(5,5,plot_idx) # define a 5 x 5 subplot matrix
+        plt.imshow(image_pil)
+        ax.xaxis.set_ticklabels([])
+        ax.yaxis.set_ticklabels([])
+        ax.xaxis.set_ticks([])
+        ax.yaxis.set_ticks([])
+        ax.set_xlabel(classification[image_idx])
+
+    plt.draw()
+    key = plt.waitforbuttonpress(0)
+    if not plt.fignum_exists(1):
+        print('Terminating')
+        exit(0)
 
 
 
