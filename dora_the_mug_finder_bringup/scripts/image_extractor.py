@@ -17,8 +17,9 @@ import os
 import cv2
 import matplotlib.pyplot as plt
 from sensor_msgs.msg import Image
-from std_msgs.msg import Header
 from cv_bridge import CvBridge, CvBridgeError
+import argparse
+import sys
 
 import rospy
 from dora_the_mug_finder_msg.msg import Object , Images
@@ -108,6 +109,16 @@ class Image:
 
 def main():
 
+    ###########################################
+    # Initialization                          #
+    ###########################################
+    parser = argparse.ArgumentParser(description='Data Collector')
+    parser.add_argument('-v', '--visualize', action='store_true',
+                        help='Visualize the point cloud')
+    
+    arglist = [x for x in sys.argv[1:] if not x.startswith('__')]
+    args = vars(parser.parse_args(args=arglist))
+
     rospy.init_node('image_extractor', anonymous=False)
 
     image = Image()
@@ -115,7 +126,8 @@ def main():
     rospy.Subscriber("objects_publisher", Object, image.callback)
 
     while not rospy.is_shutdown():
-        image.draw()
+        if args['visualize']: # Checks if the user wants to visualize the point cloud
+            image.draw()
         rospy.sleep(1) 
         
 
