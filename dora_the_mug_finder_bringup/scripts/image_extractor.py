@@ -113,8 +113,7 @@ def main():
     # Initialization                          #
     ###########################################
     parser = argparse.ArgumentParser(description='Data Collector')
-    parser.add_argument('-v', '--visualize', action='store_true',
-                        help='Visualize the point cloud')
+    parser.add_argument('-v', '--visualize', action='store_true', help='Visualize extracted images')
     
     arglist = [x for x in sys.argv[1:] if not x.startswith('__')]
     args = vars(parser.parse_args(args=arglist))
