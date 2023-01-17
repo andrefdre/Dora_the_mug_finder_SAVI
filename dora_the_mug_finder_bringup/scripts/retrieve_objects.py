@@ -260,6 +260,8 @@ def main():
         if args['visualize']: # Checks if the user wants to visualize the point cloud
             text = f'number of objects: {scene_number_objects}'
             text_number_objects = text_3d(text , font_size=20)
+            text_number_objects = Transform(-x,y,z,0,0,0).rotate(text_number_objects,letter=True)
+            text_number_objects = Transform(0,0,0,tx-1,ty-1.3,tz).translate(text_number_objects)
             #entities.append(t.bbox)
             entities.append(text_number_objects)
             entities.append(frame)
