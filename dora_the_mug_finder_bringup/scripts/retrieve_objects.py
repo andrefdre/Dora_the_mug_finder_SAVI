@@ -92,7 +92,7 @@ def main():
         os.system('pcl_ply2pcd ' + filenames[file_idx] + ' pcd_point_cloud.pcd')
         point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
         
-        parts = filename.split('/')
+        parts = filenames[file_idx] .split('/')
         part = parts[-1]
         parts = part.split('.')
         scene_number = parts[0]
