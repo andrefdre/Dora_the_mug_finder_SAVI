@@ -21,8 +21,6 @@ from dora_the_mug_finder_msg.msg import Object , Point
 
 
 def callback(data):
-    #rospy.loginfo(rospy.get_caller_id() + "I heard %s", data.center)
-
     files_path=f'{os.environ["DORA"]}'
     
     # Scene dataset paths
