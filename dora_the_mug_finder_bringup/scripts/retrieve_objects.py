@@ -45,16 +45,8 @@ view = {
 
 def main():
     ###########################################
-    # Ros Initialization                      #
+    # Initialization                          #
     ###########################################
-    pub = rospy.Publisher('objects_publisher', Object, queue_size=10)
-    rospy.init_node('objects', anonymous=False)
-    rate = rospy.Rate(10) # 10hz
-
-    # ------------------------------------------
-    # Object detection Initialization
-    # ------------------------------------------
-
     parser = argparse.ArgumentParser(description='Data Collector')
     parser.add_argument('-v', '--visualize', action='store_true',
                         help='Visualize the point cloud')
@@ -62,11 +54,20 @@ def main():
     arglist = [x for x in sys.argv[1:] if not x.startswith('__')]
     args = vars(parser.parse_args(args=arglist))
 
+    ###########################################
+    # Ros Initialization                      #
+    ###########################################
+    pub = rospy.Publisher('objects_publisher', Object, queue_size=10)
+    rospy.init_node('objects', anonymous=False)
+    rate = rospy.Rate(10) # 10hz
+
+    ###########################################
+    # Object detection Initialization         #
+    ###########################################
     files_path=f'{os.environ["DORA"]}'
     
     # Scene dataset paths
     filenames = []
-
     filenames.append (files_path + '/rgbd-scenes-v2/pc/03.ply')
     #filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
     file_idx = 0
@@ -97,10 +98,6 @@ def main():
         parts = part.split('.')
         scene_number = parts[0]
         scene_number_objects = scenes_number_objects[scene_number]
-    
-        # ------------------------------------------
-        # Execution
-        # ------------------------------------------
 
         ########################################
         # Find two planes                      #
@@ -197,15 +194,11 @@ def main():
             if d['z'] > threshold_z and dist < threshold_dist and d['width'] < threshold_width and d['length'] < threshold_length:       
                 # condition of being object: Z center > 0, be close to the reference, not be too big
                 objects.append(d) #Add the dict of this object to the list
-        
-        
-        if scene_number_objects != len(objects):
-            print(Fore.RED + 'number of objects is wrong' + Style.RESET_ALL)
 
 
-        # ------------------------------------------
-        # Visualization
-        # ------------------------------------------
+       #####################################
+       # BBox extraction                   #
+       #####################################
         entities = []
         objects_3d = Object()
         for object_idx, object in enumerate(objects):
@@ -213,7 +206,6 @@ def main():
             object['points'] = Transform(0,0,0,tx,ty,tz).translate(object['points'])
             object['bbox_obj'] = object['points'].get_axis_aligned_bounding_box()
             bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(object['bbox_obj'])
-
             # Create ROS Message
             min = object['bbox_obj'].get_min_bound()
             objects_3d.corners.append(Point(min[0],min[1],min[2]))
@@ -231,12 +223,20 @@ def main():
               entities.append(object['points'])
               entities.append(bbox_to_draw)
 
-
+        # Publish ROS messages
         pub.publish(objects_3d)
         rate.sleep()
 
 
+        ######################################
+        # Visualization                      #
+        ######################################
+        if scene_number_objects != len(objects):
+            print(Fore.RED + 'number of objects is wrong' + Style.RESET_ALL)
+
         if args['visualize']: # Checks if the user wants to visualize the point cloud
+            text = f'number of objects: {scene_number_objects}'
+            text_number_objects = text_3d(text , font_size=20)
             #entities.append(t.bbox)
             entities.append(text_number_objects)
             entities.append(frame)
