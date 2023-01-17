@@ -1,27 +1,21 @@
 #!/usr/bin/python3
 
-# Imports 
+# General Imports 
 import argparse
 import os
 import glob
-import random
-from statistics import mean
 import sys
-from sklearn.model_selection import train_test_split
 from torchvision import transforms
 import matplotlib.pyplot as plt
-import torch.nn.functional as F
-from tqdm import tqdm
 from colorama import Fore, Style
 import torch
 from PIL import Image
-
 from cv_bridge import CvBridge, CvBridgeError
-
 import rospy
-from dora_the_mug_finder_msg.msg import Object , Images
+from std_msgs.msg import String
 
-
+# Own package imports
+from dora_the_mug_finder_msg.msg import Object , Images , Classes
 from dora_the_mug_finder_bringup.src.model import Model
 from dora_the_mug_finder_bringup.src.utils import LoadModel,GetClassListFromFolder
 
@@ -31,7 +25,7 @@ class ImageClassifier:
     def __init__(self,model,device):
         self.model = model
         self.device = device
-        self.pub = rospy.Publisher('class_publisher', Images, queue_size=10)
+        self.pub = rospy.Publisher('class_publisher', Classes, queue_size=10)
         self.images = []
         self.bridge = CvBridge()
         self.class_list= GetClassListFromFolder()
@@ -45,6 +39,8 @@ class ImageClassifier:
         self.figure.figure.set_size_inches(10,4)
         plt.legend(loc='best')
         plt.clf()
+        pub = rospy.Publisher('objects_publisher', Object, queue_size=10)
+        self.update_graph = False
                             
 
     def callback(self,data):
@@ -52,7 +48,7 @@ class ImageClassifier:
         for image in data.images:
             self.images.append(self.bridge.imgmsg_to_cv2(image, "passthrough"))
 
-        self.classification=[]
+        self.classification=Classes()
         for image_cv2 in self.images:
             image_pill = Image.fromarray(image_cv2)
             #image_pill = Image.open(image_filename)
@@ -67,7 +63,10 @@ class ImageClassifier:
 
             output = self.model(image_t)
             prediction = torch.argmax(output)
-            self.classification.append(self.class_list[prediction.data.item()])
+            self.classification.classes.append(String(self.class_list[prediction.data.item()]))
+        
+        self.pub.publish(self.classification)
+        self.update_graph = True
 
         print(self.classification)
         
@@ -76,7 +75,7 @@ class ImageClassifier:
         plt.clf()
         for plot_idx, image_idx in enumerate(list(range(len(self.images))), start=1):
         
-            label=self.classification[image_idx]
+            label=self.classification.classes[image_idx].data
 
             image_pil = Image.fromarray(self.images[image_idx])
 
@@ -86,8 +85,9 @@ class ImageClassifier:
             ax.yaxis.set_ticklabels([])
             ax.xaxis.set_ticks([])
             ax.yaxis.set_ticks([])
-            ax.set_xlabel(self.classification[image_idx])
+            ax.set_xlabel(self.classification.classes[image_idx].data)
 
+        self.update_graph = False
         plt.draw()
         key = plt.waitforbuttonpress(1)
         if not plt.fignum_exists(1):
@@ -143,7 +143,7 @@ def main():
 
 
     while not rospy.is_shutdown():
-        if args['visualize']: # Checks if the user wants to visualize the point cloud
+        if args['visualize'] and image.update_graph==True: # Checks if the user wants to visualize the point cloud
             image.draw()
         rospy.sleep(1) 
 

@@ -20,7 +20,7 @@ import os
 import rospy
 
 # Our Package imports
-from dora_the_mug_finder_msg.msg import Object , Point
+from dora_the_mug_finder_msg.msg import Object , Point , Classes
 from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Transform
 from dora_the_mug_finder_bringup.src.utils import text_3d
 
@@ -45,6 +45,19 @@ view = {
 	"version_minor" : 0
 }
 
+
+class Classification:
+
+    def __init__(self):
+        self.update_names = False
+                            
+
+    def callback(self,data):
+        self.object_names = [name_string.data for name_string in data.classes]
+
+       
+        print(self.object_names)
+
 def main():
     ###########################################
     # Initialization                          #
@@ -59,7 +72,10 @@ def main():
     ###########################################
     # Ros Initialization                      #
     ###########################################
+    classification = Classification()
+
     pub = rospy.Publisher('objects_publisher', Object, queue_size=10)
+    rospy.Subscriber("class_publisher", Classes, classification.callback)
     rospy.init_node('objects', anonymous=False)
     rate = rospy.Rate(10) # 10hz
 
