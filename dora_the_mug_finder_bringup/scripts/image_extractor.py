@@ -17,6 +17,8 @@ import os
 import cv2
 import matplotlib.pyplot as plt
 from sensor_msgs.msg import Image
+from std_msgs.msg import Header
+from cv_bridge import CvBridge, CvBridgeError
 
 import rospy
 from dora_the_mug_finder_msg.msg import Object , Images
@@ -27,7 +29,9 @@ class Image:
     def __init__(self):
         self.figure = plt.figure("Cropped Images")
         self.figure.set_size_inches(10,5)
-        self.cropped_images = []
+        self.cropped_images = Images()
+        self.pub = rospy.Publisher('image_publisher', Images, queue_size=10)
+        self.bridge = CvBridge()
 
     def callback(self,data):
         files_path=f'{os.environ["DORA"]}'
@@ -67,7 +71,8 @@ class Image:
     
         # Line thickness of 2 px
         thickness = 2
-        self.cropped_images = []
+
+        self.cropped_images = Images()
         for filename in filenames:
             image = cv2.imread(filename)
             image = cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
@@ -76,24 +81,23 @@ class Image:
                 #image[point_2d[0][1]-2:point_2d[0][1]+2,point_2d[0][0]-2:point_2d[0][0]+2]=color
                 #image = cv2.rectangle(image, bbox_2d[idx][0][0], bbox_2d[idx][1][0], color, thickness)
                 cropped_image = image[bbox_2d[idx][1][0][1]:bbox_2d[idx][0][0][1],bbox_2d[idx][0][0][0]:bbox_2d[idx][1][0][0]]
-                self.cropped_images.append(cropped_image)
+                height ,width , _ = cropped_image.shape
+                self.cropped_images.images.append(self.bridge.cv2_to_imgmsg(cropped_image, "passthrough"))
+        
+        self.pub.publish(self.cropped_images)
 
     def draw(self):
         plt.clf()
-        for image_idx,cropped_image in enumerate(self.cropped_images,start=1):
+        for image_idx,cropped_image in enumerate(self.cropped_images.images,start=1):
             ax = self.figure.add_subplot(2,5,image_idx) # define a 5 x 5 subplot matrix
-            plt.imshow(cropped_image)
+            cv_image = self.bridge.imgmsg_to_cv2(cropped_image, desired_encoding='passthrough')
+            plt.imshow(cv_image)
             ax.xaxis.set_ticklabels([])
             ax.yaxis.set_ticklabels([])
             ax.xaxis.set_ticks([])
             ax.yaxis.set_ticks([])
             ax.set_xlabel(str(image_idx), color='green')
   
-
-        
-        # plt.show(block=False)
-        # plt.pause(1)
-        # plt.close()
         plt.draw()
 
         key = plt.waitforbuttonpress(1)
@@ -108,11 +112,9 @@ def main():
 
     image = Image()
 
-    pub = rospy.Publisher('image_publisher', Images, queue_size=10)
     rospy.Subscriber("objects_publisher", Object, image.callback)
 
     while not rospy.is_shutdown():
-        print("hello")
         image.draw()
         rospy.sleep(1) 
         
