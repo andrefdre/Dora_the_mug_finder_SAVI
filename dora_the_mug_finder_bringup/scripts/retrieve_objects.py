@@ -172,12 +172,8 @@ def main():
 
             # Create ROS Message
             min = object['bbox_obj'].get_min_bound()
-            print(object)
-            print(min)
-
             objects_3d.corners.append(Point(min[0],min[1],min[2]))
             max = object['bbox_obj'].get_max_bound()
-            print(max)
             objects_3d.corners.append(Point(max[0],max[1],max[2]))
             center = object['points'].get_center()
             objects_3d.center.append(Point(center[0],center[1],center[2]))
