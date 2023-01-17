@@ -6,6 +6,7 @@
 # SAVI, January 2023.
 # --------------------------------------------------
 
+# Other Packages imports
 from more_itertools import locate
 from colorama import Fore, Style
 from copy import deepcopy
@@ -17,12 +18,13 @@ import glob
 import sys
 import os
 import rospy
-from dora_the_mug_finder_msg.msg import Object , Point
 
+# Our Package imports
+from dora_the_mug_finder_msg.msg import Object , Point
 from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Transform
 from dora_the_mug_finder_bringup.src.utils import text_3d
 
-
+# Stores the view 
 view = {
 	"class_name" : "ViewTrajectory",
 	"interval" : 29,
@@ -93,6 +95,9 @@ def main():
         os.system('pcl_ply2pcd ' + filenames[file_idx] + ' pcd_point_cloud.pcd')
         point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
         
+        ########################################
+        # Gets the scene number and nº objects #
+        ########################################
         parts = filenames[file_idx] .split('/')
         part = parts[-1]
         parts = part.split('.')
@@ -102,7 +107,7 @@ def main():
         ########################################
         # Find two planes                      #
         ########################################
-        # find two planes: from the table and another        
+        # find two planes: table and another        
         point_cloud_twoplanes = deepcopy(point_cloud_original) 
         number_of_planes = 2
         planes = []
@@ -120,12 +125,7 @@ def main():
         # Find table plane                     #
         ########################################
         plane_table = PlaneTable(planes) # create a new plane_table instance
-        plane_table = plane_table.planetable()
-
-        # properties of the plane_table: .a,.b,.c,.d,
-        #                                .inlier_cloud,.inlier_idxs,
-        #                                .outlier_cloud
-        
+        plane_table = plane_table.planetable()  
 
         # definition point cloud without table and point cloud only table
         plane_table.outlier_cloud = plane_table.outlier_cloud.voxel_down_sample(voxel_size=0.005)
@@ -152,7 +152,7 @@ def main():
         t.table = Transform(-x,-y,-z,0,0,0).rotate(t.table)
 
         ########################################
-        # Objects                              #
+        # Objects Detection                    #
         ########################################
         # bbox: table + objects
         t.bbox_table(t.table)
@@ -206,11 +206,13 @@ def main():
             object['points'] = Transform(0,0,0,tx,ty,tz).translate(object['points'])
             object['bbox_obj'] = object['points'].get_axis_aligned_bounding_box()
             bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(object['bbox_obj'])
-            # Create ROS Message
-            min = object['bbox_obj'].get_min_bound()
+            # Create ROS Message #
+            # Gets the min and max of the bounding box
+            min = object['bbox_obj'].get_min_bound() 
             objects_3d.corners.append(Point(min[0],min[1],min[2]))
             max = object['bbox_obj'].get_max_bound()
             objects_3d.corners.append(Point(max[0],max[1],max[2]))
+            # Gets the center points
             center = object['points'].get_center()
             objects_3d.center.append(Point(center[0],center[1],center[2]))
 
@@ -224,8 +226,8 @@ def main():
               entities.append(bbox_to_draw)
 
         # Publish ROS messages
-        pub.publish(objects_3d)
-        rate.sleep()
+        pub.publish(objects_3d) # Publishes the detected objects
+        rate.sleep() # Sleeps to if time < rate
 
 
         ######################################
@@ -241,7 +243,7 @@ def main():
             entities.append(text_number_objects)
             entities.append(frame)
             entities.append(point_cloud_original)
-
+            # Displays the entities
             o3d.visualization.draw_geometries(entities,
                                             zoom=view['trajectory'][0]['zoom'],
                                             front=view['trajectory'][0]['front'],
