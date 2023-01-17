@@ -16,18 +16,11 @@ import argparse
 import glob
 import sys
 import os
+import rospy
+from dora_the_mug_finder_msg.msg import Object , Point
 
 from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Transform
 from dora_the_mug_finder_bringup.src.utils import text_3d
-
-def keypoints_to_spheres(keypoints):
-    spheres = o3d.geometry.TriangleMesh()
-    for keypoint in keypoints.points:
-        sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.005)
-        sphere.translate(keypoint)
-        spheres += sphere
-    spheres.paint_uniform_color([1.0, 0.75, 0.0])
-    return spheres
 
 
 view = {
@@ -51,9 +44,15 @@ view = {
 }
 
 def main():
-    
+    ###########################################
+    # Ros Initialization                      #
+    ###########################################
+    pub = rospy.Publisher('objects_publisher', Object, queue_size=10)
+    rospy.init_node('objects', anonymous=False)
+    rate = rospy.Rate(10) # 10hz
+
     # ------------------------------------------
-    # Initialization
+    # Object detection Initialization
     # ------------------------------------------
 
     parser = argparse.ArgumentParser(description='Data Collector')
@@ -67,9 +66,11 @@ def main():
     
     # Scene dataset paths
     filenames = []
-    #filenames.append (files_path + '/rgbd-scenes-v2/pc/12.ply')
-    filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
 
+    filenames.append (files_path + '/rgbd-scenes-v2/pc/03.ply')
+    #filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
+    file_idx = 0
+    
     scenes_number_objects = {
         '01': 5,
         '02': 5,
@@ -86,9 +87,9 @@ def main():
         '13': 4,
         '14': 4
     }
-   
-    for filename in filenames:
-        os.system('pcl_ply2pcd ' + filename + ' pcd_point_cloud.pcd')
+
+    while not rospy.is_shutdown():
+        os.system('pcl_ply2pcd ' + filenames[file_idx] + ' pcd_point_cloud.pcd')
         point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
         
         parts = filename.split('/')
@@ -205,31 +206,37 @@ def main():
         # ------------------------------------------
         # Visualization
         # ------------------------------------------
+        entities = []
+        objects_3d = Object()
+        for object_idx, object in enumerate(objects):
+            object['points'] = Transform(-x,y,z,0,0,0).rotate(object['points'],inverse=True)
+            object['points'] = Transform(0,0,0,tx,ty,tz).translate(object['points'])
+            object['bbox_obj'] = object['points'].get_axis_aligned_bounding_box()
+            bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(object['bbox_obj'])
+
+            # Create ROS Message
+            min = object['bbox_obj'].get_min_bound()
+            objects_3d.corners.append(Point(min[0],min[1],min[2]))
+            max = object['bbox_obj'].get_max_bound()
+            objects_3d.corners.append(Point(max[0],max[1],max[2]))
+            center = object['points'].get_center()
+            objects_3d.center.append(Point(center[0],center[1],center[2]))
+
+            # Creates the entities to be drawn
+            sphere =o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
+            sphere.paint_uniform_color([1.0, 0.75, 0.0])
+            sphere.translate(center)
+            if args['visualize']: # Checks if the user wants to visualize the point cloud
+              entities.append(sphere)
+              entities.append(object['points'])
+              entities.append(bbox_to_draw)
+
+
+        pub.publish(objects_3d)
+        rate.sleep()
+
+
         if args['visualize']: # Checks if the user wants to visualize the point cloud
-            text = 'number of objects: ' + str(scene_number_objects)
-            text_number_objects = text_3d(text, font_size=20)
-            text_number_objects = Transform(-x,y,z,0,0,0).rotate(text_number_objects,letter=True)
-            text_number_objects = Transform(0,0,0,tx-1,ty-1.3,tz).translate(text_number_objects)
-                
-
-            entities = []
-            for object_idx, object in enumerate(objects):
-                object['points'] = Transform(-x,y,z,0,0,0).rotate(object['points'],inverse=True)
-                object['points'] = Transform(0,0,0,tx,ty,tz).translate(object['points'])
-                object['bbox_obj'] = object['points'].get_axis_aligned_bounding_box()
-                bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(object['bbox_obj'])
-                entities.append(object['points'])
-                entities.append(bbox_to_draw)
-                
-                center = object['points'].get_center()
-                sphere =o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
-                sphere.paint_uniform_color([1.0, 0.75, 0.0])
-                sphere.translate(center)
-                entities.append(sphere)
-                #print(center)
-                #keypoints = o3d.geometry.keypoint.compute_iss_keypoints(object['points'])
-                #entities.append(keypoints_to_spheres(keypoints))
-
             #entities.append(t.bbox)
             entities.append(text_number_objects)
             entities.append(frame)
@@ -240,6 +247,7 @@ def main():
                                             front=view['trajectory'][0]['front'],
                                             lookat=view['trajectory'][0]['lookat'],
                                             up=view['trajectory'][0]['up'])
+
 
     
 
