@@ -28,7 +28,7 @@ def callback(data):
     filenames.append (files_path + '/rgbd-scenes-v2/imgs/scene_03/00000-color.png')
 
     points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
-    bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
+    bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
     
 
     # Camera parameters

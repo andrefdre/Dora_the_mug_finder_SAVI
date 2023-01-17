@@ -191,6 +191,9 @@ def main():
             d['width'] = abs(abs(bbox_max[1])-abs(bbox_min[1])) #axis y
             d['height'] = abs(abs(bbox_max[2])-abs(bbox_min[2])) #axis z
 
+            d['bbox_obj'] = d['points'].get_axis_aligned_bounding_box()
+            d['bbox_to_draw'] = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(d['bbox_obj'])
+
             if d['z'] > threshold_z and dist < threshold_dist and d['width'] < threshold_width and d['length'] < threshold_length:       
                 # condition of being object: Z center > 0, be close to the reference, not be too big
                 objects.append(d) #Add the dict of this object to the list
@@ -204,13 +207,15 @@ def main():
         for object_idx, object in enumerate(objects):
             object['points'] = Transform(-x,y,z,0,0,0).rotate(object['points'],inverse=True)
             object['points'] = Transform(0,0,0,tx,ty,tz).translate(object['points'])
-            object['bbox_obj'] = object['points'].get_axis_aligned_bounding_box()
-            bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(object['bbox_obj'])
+
+            object['bbox_to_draw'] = Transform(-x,y,z,0,0,0).rotate(object['bbox_to_draw'],inverse=True)
+            bbox_to_draw = Transform(0,0,0,tx,ty,tz).translate(object['bbox_to_draw'])
+            
             # Create ROS Message #
             # Gets the min and max of the bounding box
-            min = object['bbox_obj'].get_min_bound() 
+            min = bbox_to_draw.get_min_bound() 
             objects_3d.corners.append(Point(min[0],min[1],min[2]))
-            max = object['bbox_obj'].get_max_bound()
+            max = bbox_to_draw.get_max_bound()
             objects_3d.corners.append(Point(max[0],max[1],max[2]))
             # Gets the center points
             center = object['points'].get_center()
