@@ -50,6 +50,7 @@ class Classification:
 
     def __init__(self):
         self.update_names = False
+        self.object_names = []
                             
 
     def callback(self,data):
@@ -242,9 +243,16 @@ def main():
             sphere.paint_uniform_color([1.0, 0.75, 0.0])
             sphere.translate(center)
             if args['visualize']: # Checks if the user wants to visualize the point cloud
-              entities.append(sphere)
-              entities.append(object['points'])
-              entities.append(bbox_to_draw)
+                entities.append(sphere)
+                entities.append(object['points'])
+                entities.append(bbox_to_draw)
+                if len(classification.object_names) == len(objects):
+                    text = f'{classification.object_names[object_idx]}'
+                    object_name = text_3d(text , font_size=20)
+                    object_name = Transform(-x,y,z,0,0,0).rotate(object_name,letter=True)
+                    object_name = Transform(0,0,0,center[0]-0.1,center[1]-0.2,center[2]).translate(object_name)
+                    object_name.paint_uniform_color([1.0, 0.75, 0.0])
+                    entities.append(object_name)
 
         # Publish ROS messages
         pub.publish(objects_3d) # Publishes the detected objects

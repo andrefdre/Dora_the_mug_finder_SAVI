@@ -123,11 +123,12 @@ def main():
     image = Image()
 
     rospy.Subscriber("objects_publisher", Object, image.callback)
+    rate = rospy.Rate(10) # 10hz
 
     while not rospy.is_shutdown():
         if args['visualize']: # Checks if the user wants to visualize the point cloud
             image.draw()
-        rospy.sleep(1) 
+        rospy.sleep(rate) 
         
 
 
