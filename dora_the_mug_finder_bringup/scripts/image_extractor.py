@@ -16,9 +16,10 @@ import glob
 import os
 import cv2
 import matplotlib.pyplot as plt
+from sensor_msgs.msg import Image
 
 import rospy
-from dora_the_mug_finder_msg.msg import Object , Point
+from dora_the_mug_finder_msg.msg import Object , Images
 
 
 class Image:
@@ -72,12 +73,10 @@ class Image:
             image = cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
 
             for idx,point_2d in enumerate(points_2d):
-                image[point_2d[0][1]-2:point_2d[0][1]+2,point_2d[0][0]-2:point_2d[0][0]+2]=color
-                image = cv2.rectangle(image, bbox_2d[idx][0][0], bbox_2d[idx][1][0], color, thickness)
+                #image[point_2d[0][1]-2:point_2d[0][1]+2,point_2d[0][0]-2:point_2d[0][0]+2]=color
+                #image = cv2.rectangle(image, bbox_2d[idx][0][0], bbox_2d[idx][1][0], color, thickness)
                 cropped_image = image[bbox_2d[idx][1][0][1]:bbox_2d[idx][0][0][1],bbox_2d[idx][0][0][0]:bbox_2d[idx][1][0][0]]
                 self.cropped_images.append(cropped_image)
-
-        print("loop")
 
     def draw(self):
         plt.clf()
@@ -109,6 +108,7 @@ def main():
 
     image = Image()
 
+    pub = rospy.Publisher('image_publisher', Images, queue_size=10)
     rospy.Subscriber("objects_publisher", Object, image.callback)
 
     while not rospy.is_shutdown():
