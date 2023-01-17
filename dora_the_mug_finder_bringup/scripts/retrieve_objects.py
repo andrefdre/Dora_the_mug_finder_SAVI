@@ -14,12 +14,7 @@ import numpy as np
 import glob
 import os
 import rospy
-import sys
-from rospy_tutorials.msg import Floats
-from rospy.numpy_msg import numpy_msg
-from std_msgs.msg import Float32MultiArray
 from dora_the_mug_finder_msg.msg import Object , Point
-import numpy
 
 from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Transform
 
@@ -48,7 +43,7 @@ def main():
     # Ros Initialization                      #
     ###########################################
     pub = rospy.Publisher('objects_publisher', Object, queue_size=10)
-    rospy.init_node('objects', anonymous=True)
+    rospy.init_node('objects', anonymous=False)
     rate = rospy.Rate(10) # 10hz
 
     # ------------------------------------------
@@ -174,19 +169,29 @@ def main():
             object['points'] = Transform(0,0,0,tx,ty,tz).translate(object['points'])
             object['bbox_obj'] = object['points'].get_axis_aligned_bounding_box()
             bbox_to_draw = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(object['bbox_obj'])
-            entities.append(object['points'])
-            entities.append(bbox_to_draw)
+
+            # Create ROS Message
+            min = object['bbox_obj'].get_min_bound()
+            print(object)
+            print(min)
+
+            objects_3d.corners.append(Point(min[0],min[1],min[2]))
+            max = object['bbox_obj'].get_max_bound()
+            print(max)
+            objects_3d.corners.append(Point(max[0],max[1],max[2]))
             center = object['points'].get_center()
-            point = Point(center[0],center[1],center[2])
-            objects_3d.center.append(point)
+            objects_3d.center.append(Point(center[0],center[1],center[2]))
+
+            # Creates the entities to be drawn
             sphere =o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
             sphere.paint_uniform_color([1.0, 0.75, 0.0])
             sphere.translate(center)
             entities.append(sphere)
+            entities.append(object['points'])
+            entities.append(bbox_to_draw)
 
 
         pub.publish(objects_3d)
-        #file_idx+=1
         rate.sleep()
 
 
