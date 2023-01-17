@@ -104,7 +104,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES dora_the_mug_finder_bringup
- CATKIN_DEPENDS roscpp rospy std_msg
+ CATKIN_DEPENDS roscpp rospy std_msgs
  DEPENDS system_lib
 )
 
