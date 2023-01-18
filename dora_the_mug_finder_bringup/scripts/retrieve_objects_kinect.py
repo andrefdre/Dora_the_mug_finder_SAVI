@@ -21,9 +21,9 @@ from cv_bridge import CvBridge
 
 sys.path.append('/home/fabio/catkin_ws/src/Dora_the_mug_finder_SAVI/dora_the_mug_finder_bringup')
 # from msg import Object
-from src.table_detection import PlaneDetection, PlaneTable, Table, Transform
+#from src.table_detection import PlaneDetection, PlaneTable, Table, Transform
 
-# from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Transform
+from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Transform
 # from dora_the_mug_finder_bringup.msg import Object
 
 # def keypoints_to_spheres(keypoints):
