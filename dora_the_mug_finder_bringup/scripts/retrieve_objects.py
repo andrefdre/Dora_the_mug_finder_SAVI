@@ -52,7 +52,8 @@ def main():
     parser = argparse.ArgumentParser(description='Data Collector')
     parser.add_argument('-v', '--visualize', action='store_true',
                         help='Visualize the point cloud')
-    
+    parser.add_argument('-k', '--kinect', action='store_true',
+                        help='Visualize the point cloud')
     arglist = [x for x in sys.argv[1:] if not x.startswith('__')]
     args = vars(parser.parse_args(args=arglist))
 
@@ -66,67 +67,80 @@ def main():
     ###########################################
     # Object detection Initialization         #
     ###########################################
+    
     files_path=f'{os.environ["DORA"]}'
     
-    # Scene dataset paths
-    filenames = []
-    filenames.append (files_path + '/rgbd-scenes-v2/pc/03.ply')
-    #filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
-    file_idx = 0
-    
-    scenes_number_objects = {
-        '01': 5,
-        '02': 5,
-        '03': 5,
-        '04': 5,
-        '05': 4,
-        '06': 5,
-        '07': 5,
-        '08': 4,
-        '09': 3,
-        '10': 3,
-        '11': 3,
-        '12': 3,
-        '13': 4,
-        '14': 4
-    }
-
-    while not rospy.is_shutdown():
-        os.system('pcl_ply2pcd ' + filenames[file_idx] + ' pcd_point_cloud.pcd')
-        point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
+    if args['kinect']==False:    
+        # Scene dataset paths
+        filenames = []
+        filenames.append (files_path + '/rgbd-scenes-v2/pc/15.ply')
+        #filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
+        file_idx = 0
         
-        ########################################
-        # Gets the scene number and nº objects #
-        ########################################
-        parts = filenames[file_idx] .split('/')
-        part = parts[-1]
-        parts = part.split('.')
-        scene_number = parts[0]
-        scene_number_objects = scenes_number_objects[scene_number]
+        scenes_number_objects = {
+            '01': 5,
+            '02': 5,
+            '03': 5,
+            '04': 5,
+            '05': 4,
+            '06': 5,
+            '07': 5,
+            '08': 4,
+            '09': 3,
+            '10': 3,
+            '11': 3,
+            '12': 3,
+            '13': 4,
+            '14': 4,
+        }
+    else:
+        filename = (files_path + '/rgbd-scenes-v2/bag_scenes/kinect_first.ply')
+        print(filename)
+    while not rospy.is_shutdown():
+        if args['kinect']==False:
+            os.system('pcl_ply2pcd ' + filenames[file_idx] + ' pcd_point_cloud.pcd')
+            point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
+            
+            ########################################
+            # Gets the scene number and nº objects #
+            ########################################
+            parts = filenames[file_idx] .split('/')
+            part = parts[-1]
+            parts = part.split('.')
+            scene_number = parts[0]
+            scene_number_objects = scenes_number_objects[scene_number]
 
-        ########################################
-        # Find two planes                      #
-        ########################################
-        # find two planes: table and another        
-        point_cloud_twoplanes = deepcopy(point_cloud_original) 
-        number_of_planes = 2
-        planes = []
-        while True: # run consecutive plane detections
+            ########################################
+            # Find two planes                      #
+            ########################################
+            # find two planes: table and another        
+            point_cloud_twoplanes = deepcopy(point_cloud_original) 
+            
+            number_of_planes = 2
+                
+            planes = []
+            while True: # run consecutive plane detections
 
-            plane = PlaneDetection(point_cloud_twoplanes) # create a new plane instance
-            point_cloud_twoplanes = plane.segment() # new point cloud are the outliers of this plane detection
-    
-            planes.append(plane)
+                plane = PlaneDetection(point_cloud_twoplanes) # create a new plane instance
+                point_cloud_twoplanes = plane.segment() # new point cloud are the outliers of this plane detection
+        
+                planes.append(plane)
 
-            if len(planes) >= number_of_planes: # stop detection planes
-                break
-
-        ########################################
-        # Find table plane                     #
-        ########################################
-        plane_table = PlaneTable(planes) # create a new plane_table instance
-        plane_table = plane_table.planetable()  
-
+                if len(planes) >= number_of_planes: # stop detection planes
+                    break
+            
+            ########################################
+            # Find table plane                     #
+            ########################################
+       
+            plane_table = PlaneTable(planes) # create a new plane_table instance
+            plane_table = plane_table.planetable()  
+        
+        else:
+            point_cloud_original = o3d.io.read_point_cloud(filename)
+            plane_table = PlaneDetection(point_cloud_original) # create a new plane instance
+            plane_table.segment() # new point cloud are the outliers of this plane detection
+            
         # definition point cloud without table and point cloud only table
         plane_table.outlier_cloud = plane_table.outlier_cloud.voxel_down_sample(voxel_size=0.005)
         
@@ -238,14 +252,18 @@ def main():
         ######################################
         # Visualization                      #
         ######################################
-        if scene_number_objects != len(objects):
+        if args['kinect']==False and scene_number_objects != len(objects):
             print(Fore.RED + 'number of objects is wrong' + Style.RESET_ALL)
 
         if args['visualize']: # Checks if the user wants to visualize the point cloud
-            text = f'number of objects: {scene_number_objects}'
-            text_number_objects = text_3d(text , font_size=20)
-            #entities.append(t.bbox)
-            entities.append(text_number_objects)
+            if args['kinect']==False: 
+                text = f'number of objects: {scene_number_objects}'
+                text_number_objects = text_3d(text , font_size=20)
+                entities.append(text_number_objects)
+            # t.table = Transform(-x,y,z,0,0,0).rotate(t.table,inverse=True)
+            # t.table = Transform(0,0,0,tx,ty,tz).translate(t.table)
+            # entities.append(t.table)
+            
             entities.append(frame)
             entities.append(point_cloud_original)
             # Displays the entities
