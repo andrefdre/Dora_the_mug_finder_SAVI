@@ -128,7 +128,6 @@ The software required to explore the Kinect XBOX 360 must be compiled from sourc
 You also need to install Openni and Openni2 using:
 ```
 sudo apt-get install ros-<version>-openni-launch
-sudo apt-get install ros-<version>-openni2-launch
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
