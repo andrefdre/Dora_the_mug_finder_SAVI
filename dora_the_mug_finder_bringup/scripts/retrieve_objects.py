@@ -94,7 +94,7 @@ def main():
             '14': 4,
         }
     else:
-        filename = (files_path + '/rgbd-scenes-v2/bag_scenes/kinect_first.ply')
+        filename = (files_path + '/rgbd-scenes-v2/bag_scenes/kinect_all_points.ply')
         print(filename)
     while not rospy.is_shutdown():
         if args['kinect']==False:
@@ -109,37 +109,39 @@ def main():
             parts = part.split('.')
             scene_number = parts[0]
             scene_number_objects = scenes_number_objects[scene_number]
-
-            ########################################
-            # Find two planes                      #
-            ########################################
-            # find two planes: table and another        
-            point_cloud_twoplanes = deepcopy(point_cloud_original) 
-            
-            number_of_planes = 2
-                
-            planes = []
-            while True: # run consecutive plane detections
-
-                plane = PlaneDetection(point_cloud_twoplanes) # create a new plane instance
-                point_cloud_twoplanes = plane.segment() # new point cloud are the outliers of this plane detection
-        
-                planes.append(plane)
-
-                if len(planes) >= number_of_planes: # stop detection planes
-                    break
-            
-            ########################################
-            # Find table plane                     #
-            ########################################
-       
-            plane_table = PlaneTable(planes) # create a new plane_table instance
-            plane_table = plane_table.planetable()  
-        
         else:
             point_cloud_original = o3d.io.read_point_cloud(filename)
-            plane_table = PlaneDetection(point_cloud_original) # create a new plane instance
-            plane_table.segment() # new point cloud are the outliers of this plane detection
+            
+        ########################################
+        # Find two planes                      #
+        ########################################
+        # find two planes: table and another        
+        point_cloud_twoplanes = deepcopy(point_cloud_original) 
+        
+        number_of_planes = 2
+            
+        planes = []
+        while True: # run consecutive plane detections
+
+            plane = PlaneDetection(point_cloud_twoplanes) # create a new plane instance
+            point_cloud_twoplanes = plane.segment() # new point cloud are the outliers of this plane detection
+    
+            planes.append(plane)
+
+            if len(planes) >= number_of_planes: # stop detection planes
+                break
+        
+        ########################################
+        # Find table plane                     #
+        ########################################
+    
+        plane_table = PlaneTable(planes) # create a new plane_table instance
+        plane_table = plane_table.planetable()  
+    
+        # else:
+        #     point_cloud_original = o3d.io.read_point_cloud(filename)
+        #     plane_table = PlaneDetection(point_cloud_original) # create a new plane instance
+        #     plane_table.segment() # new point cloud are the outliers of this plane detection
             
         # definition point cloud without table and point cloud only table
         plane_table.outlier_cloud = plane_table.outlier_cloud.voxel_down_sample(voxel_size=0.005)
@@ -243,7 +245,7 @@ def main():
               entities.append(sphere)
               entities.append(object['points'])
               entities.append(bbox_to_draw)
-
+        print(len(objects))
         # Publish ROS messages
         pub.publish(objects_3d) # Publishes the detected objects
         rate.sleep() # Sleeps to if time < rate
@@ -260,9 +262,9 @@ def main():
                 text = f'number of objects: {scene_number_objects}'
                 text_number_objects = text_3d(text , font_size=20)
                 entities.append(text_number_objects)
-            # t.table = Transform(-x,y,z,0,0,0).rotate(t.table,inverse=True)
-            # t.table = Transform(0,0,0,tx,ty,tz).translate(t.table)
-            # entities.append(t.table)
+            t.table = Transform(-x,y,z,0,0,0).rotate(t.table,inverse=True)
+            t.table = Transform(0,0,0,tx,ty,tz).translate(t.table)
+            entities.append(t.table)
             
             entities.append(frame)
             entities.append(point_cloud_original)
