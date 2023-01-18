@@ -6,7 +6,7 @@ from PIL import Image
 from torchvision import transforms
 import glob
 import os
-from utils import GetClassListFromFolder
+from dora_the_mug_finder_bringup.src.utils import GetClassListFromFolder
 
 class Dataset(torch.utils.data.Dataset):
     def __init__(self,image_filenames):
