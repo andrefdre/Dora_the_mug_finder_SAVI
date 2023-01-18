@@ -64,7 +64,7 @@ class Cloud:
         
         # Get cloud data from ros_cloud
         field_names=[field.name for field in ros_cloud.fields]
-        cloud_data = list(pc2.read_points(ros_cloud, field_names = field_names))
+        cloud_data = list(pc2.read_points(ros_cloud,field_names = field_names))
         print(len(cloud_data))
         # Check empty
         open3d_cloud = o3d.geometry.PointCloud()
