@@ -128,7 +128,7 @@ def main():
     while not rospy.is_shutdown():
         if args['visualize']: # Checks if the user wants to visualize the point cloud
             image.draw()
-        rospy.sleep(rate) 
+        rate.sleep() # Sleeps to if time < rate
         
 
 

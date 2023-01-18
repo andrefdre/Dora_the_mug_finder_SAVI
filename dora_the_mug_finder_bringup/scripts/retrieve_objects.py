@@ -38,7 +38,7 @@ view = {
 			"front" : [ 0.11555556622862719, 0.11345331420937423, -0.98680051510347855 ],
 			"lookat" : [ -0.23064077816298553, -0.2045093977126011, 0.17408966530741635 ],
 			"up" : [ 0.013560659994457255, -0.99354326124308379, -0.11264056347059027 ],
-			"zoom" : 0.33999999999999853
+			"zoom" : 0.1
 		}
 	],
 	"version_major" : 1,
@@ -55,9 +55,8 @@ class Classification:
 
     def callback(self,data):
         self.object_names = [name_string.data for name_string in data.classes]
+        
 
-       
-        print(self.object_names)
 
 def main():
     ###########################################
@@ -108,10 +107,19 @@ def main():
         '14': 4
     }
 
-    while not rospy.is_shutdown():
-        os.system('pcl_ply2pcd ' + filenames[file_idx] + ' pcd_point_cloud.pcd')
-        point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
-        
+    os.system('pcl_ply2pcd ' + filenames[file_idx] + ' pcd_point_cloud.pcd')
+    point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
+
+    vis = o3d.visualization.Visualizer()
+    vis.create_window()
+    ctr = vis.get_view_control()
+    ctr.set_front(view['trajectory'][0]['front'])
+    ctr.set_up(view['trajectory'][0]['up'])
+    ctr.set_lookat(view['trajectory'][0]['lookat'])
+    ctr.set_zoom(view['trajectory'][0]['zoom'])
+    number_of_entities = 0
+
+    while not rospy.is_shutdown():    
         ########################################
         # Gets the scene number and nº objects #
         ########################################
@@ -244,7 +252,6 @@ def main():
             sphere.translate(center)
             if args['visualize']: # Checks if the user wants to visualize the point cloud
                 entities.append(sphere)
-                entities.append(object['points'])
                 entities.append(bbox_to_draw)
                 if len(classification.object_names) == len(objects):
                     text = f'{classification.object_names[object_idx]}'
@@ -273,13 +280,25 @@ def main():
             #entities.append(t.bbox)
             entities.append(text_number_objects)
             entities.append(frame)
-            entities.append(point_cloud_original)
             # Displays the entities
-            o3d.visualization.draw_geometries(entities,
-                                            zoom=view['trajectory'][0]['zoom'],
-                                            front=view['trajectory'][0]['front'],
-                                            lookat=view['trajectory'][0]['lookat'],
-                                            up=view['trajectory'][0]['up'])
+            if number_of_entities != len(entities):
+                vis.clear_geometries()
+                vis.add_geometry(point_cloud_original)
+                for entity in entities:
+                    vis.add_geometry(entity)
+
+                number_of_entities = len(entities)
+            else:
+                for entity in entities:
+                    vis.update_geometry(entity)
+
+            ctr.set_front(view['trajectory'][0]['front'])
+            ctr.set_up(view['trajectory'][0]['up'])
+            ctr.set_lookat(view['trajectory'][0]['lookat'])
+            ctr.set_zoom(view['trajectory'][0]['zoom'])
+            vis.poll_events()
+            vis.update_renderer()
+            vis.run()
 
 
     
