@@ -56,7 +56,7 @@ class Cloud:
         self.pub = rospy.Publisher('cloud_test', PointCloud2, queue_size=10)
 
     def callback(self,data):
-        
+
         #self.pub.publish(data)
         self.convertCloudFromRosToOpen3d(data)
 
@@ -64,8 +64,8 @@ class Cloud:
         
         # Get cloud data from ros_cloud
         field_names=[field.name for field in ros_cloud.fields]
-        cloud_data = list(pc2.read_points(ros_cloud, skip_nans=True, field_names = field_names))
-
+        cloud_data = list(pc2.read_points(ros_cloud, field_names = field_names))
+        print(len(cloud_data))
         # Check empty
         open3d_cloud = o3d.geometry.PointCloud()
         if len(cloud_data)==0:
@@ -89,6 +89,7 @@ class Cloud:
             # Combine
             open3d_cloud.points = o3d.utility.Vector3dVector(np.array(xyz))
             open3d_cloud.colors = o3d.utility.Vector3dVector(np.array(rgb)/255.0)
+           
         else:
             xyz = [(x,y,z) for x,y,z in cloud_data ] # get xyz
             open3d_cloud.points = o3d.utility.Vector3dVector(np.array(xyz))
@@ -97,13 +98,14 @@ class Cloud:
         # Visualization and point cloud writing   #
         # (delete in the future)                  #
         ###########################################
+        print(open3d_cloud)
         o3d.visualization.draw_geometries([open3d_cloud],
                                         zoom=view['trajectory'][0]['zoom'],
                                         front=view['trajectory'][0]['front'],
                                         lookat=view['trajectory'][0]['lookat'],
                                         up=view['trajectory'][0]['up'])
         
-        o3d.io.write_point_cloud('kinect.ply', open3d_cloud, write_ascii=False, compressed=False, print_progress=False)
+        o3d.io.write_point_cloud('kinect_complete.ply', open3d_cloud, write_ascii=False, compressed=False, print_progress=False)
    
 ###########################################
 # Execution                               #
