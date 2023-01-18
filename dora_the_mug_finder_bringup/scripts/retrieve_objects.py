@@ -7,11 +7,13 @@
 # --------------------------------------------------
 
 # Other Packages imports
+import time
 from more_itertools import locate
 from colorama import Fore, Style
 from copy import deepcopy
 from math import sqrt
 import open3d as o3d
+import open3d.visualization.gui as gui
 import numpy as np
 import argparse
 import glob
@@ -110,16 +112,23 @@ def main():
     os.system('pcl_ply2pcd ' + filenames[file_idx] + ' pcd_point_cloud.pcd')
     point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
 
-    vis = o3d.visualization.Visualizer()
-    vis.create_window()
-    ctr = vis.get_view_control()
-    ctr.set_front(view['trajectory'][0]['front'])
-    ctr.set_up(view['trajectory'][0]['up'])
-    ctr.set_lookat(view['trajectory'][0]['lookat'])
-    ctr.set_zoom(view['trajectory'][0]['zoom'])
+    app = gui.Application.instance
+    app.initialize()
+
+    vis = o3d.visualization.O3DVisualizer("window")
+    app.add_window(vis)
+    
+    #vis.create_window("Scene")
+    #ctr = vis.get_view_control()
+    vis.add_geometry("pcd",point_cloud_original)
+    # ctr.set_front(view['trajectory'][0]['front'])
+    # ctr.set_up(view['trajectory'][0]['up'])
+    # ctr.set_lookat(view['trajectory'][0]['lookat'])
+    # ctr.set_zoom(view['trajectory'][0]['zoom'])
+
     number_of_entities = 0
 
-    while not rospy.is_shutdown():    
+    while not rospy.is_shutdown():
         ########################################
         # Gets the scene number and nº objects #
         ########################################
@@ -228,6 +237,7 @@ def main():
        # BBox extraction                   #
        #####################################
         entities = []
+        entities_names = []
         objects_3d = Object()
         for object_idx, object in enumerate(objects):
             object['points'] = Transform(-x,y,z,0,0,0).rotate(object['points'],inverse=True)
@@ -252,7 +262,9 @@ def main():
             sphere.translate(center)
             if args['visualize']: # Checks if the user wants to visualize the point cloud
                 entities.append(sphere)
+                entities_names.append(f'sphere_{str(object_idx)}')
                 entities.append(bbox_to_draw)
+                entities_names.append(f'bbox_{str(object_idx)}')
                 if len(classification.object_names) == len(objects):
                     text = f'{classification.object_names[object_idx]}'
                     object_name = text_3d(text , font_size=20)
@@ -260,10 +272,7 @@ def main():
                     object_name = Transform(0,0,0,center[0]-0.1,center[1]-0.2,center[2]).translate(object_name)
                     object_name.paint_uniform_color([1.0, 0.75, 0.0])
                     entities.append(object_name)
-
-        # Publish ROS messages
-        pub.publish(objects_3d) # Publishes the detected objects
-        rate.sleep() # Sleeps to if time < rate
+                    entities_names.append(f'object_name_{str(object_idx)}')
 
 
         ######################################
@@ -279,26 +288,33 @@ def main():
             text_number_objects = Transform(0,0,0,tx-1,ty-1.3,tz).translate(text_number_objects)
             #entities.append(t.bbox)
             entities.append(text_number_objects)
+            entities_names.append(f'number_objects')
             entities.append(frame)
+            entities_names.append(f'frame')
             # Displays the entities
             if number_of_entities != len(entities):
-                vis.clear_geometries()
-                vis.add_geometry(point_cloud_original)
-                for entity in entities:
-                    vis.add_geometry(entity)
+
+                for idx,entity in enumerate(entities):
+                    vis.add_geometry(entities_names[idx],entity)
 
                 number_of_entities = len(entities)
             else:
-                for entity in entities:
-                    vis.update_geometry(entity)
+                for idx,entity in enumerate(entities):
+                    vis.remove_geometry(entities_names[idx])
+                    vis.add_geometry(entities_names[idx],entity)
 
-            ctr.set_front(view['trajectory'][0]['front'])
-            ctr.set_up(view['trajectory'][0]['up'])
-            ctr.set_lookat(view['trajectory'][0]['lookat'])
-            ctr.set_zoom(view['trajectory'][0]['zoom'])
-            vis.poll_events()
-            vis.update_renderer()
-            vis.run()
+
+
+      
+            app.run_in_thread(vis)
+
+
+
+        #################################
+        # ROS Publish                   #
+        #################################
+        pub.publish(objects_3d) # Publishes the detected objects
+        rate.sleep() # Sleeps to if time < rate
 
 
     
