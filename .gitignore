@@ -8,4 +8,6 @@ png
 .ply
 .label
 .pose
+.pcd
 rgbd-scenes-v2
+pcd_point_cloud.pcd

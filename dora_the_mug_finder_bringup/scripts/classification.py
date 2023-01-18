@@ -16,11 +16,83 @@ from colorama import Fore, Style
 import torch
 from PIL import Image
 
+from cv_bridge import CvBridge, CvBridgeError
+
+import rospy
+from dora_the_mug_finder_msg.msg import Object , Images
+
 
 from dora_the_mug_finder_bringup.src.model import Model
 from dora_the_mug_finder_bringup.src.utils import LoadModel,GetClassListFromFolder
 
 
+class ImageClassifier:
+
+    def __init__(self,model,device):
+        self.model = model
+        self.device = device
+        self.pub = rospy.Publisher('class_publisher', Images, queue_size=10)
+        self.images = []
+        self.bridge = CvBridge()
+        self.class_list= GetClassListFromFolder()
+        self.PIL_to_Tensor = transforms.Compose([
+                            transforms.Resize((224,224)),
+                            transforms.ToTensor()
+                            ])
+
+        self.figure = plt.figure("Visualization")  
+        plt.axis('off')
+        self.figure.figure.set_size_inches(10,4)
+        plt.legend(loc='best')
+        plt.clf()
+                            
+
+    def callback(self,data):
+        self.images = []
+        for image in data.images:
+            self.images.append(self.bridge.imgmsg_to_cv2(image, "passthrough"))
+
+        self.classification=[]
+        for image_cv2 in self.images:
+            image_pill = Image.fromarray(image_cv2)
+            #image_pill = Image.open(image_filename)
+        
+            
+            image_t= self.PIL_to_Tensor(image_pill)
+            image_t = image_t[0:3]
+            
+            image_t = image_t.unsqueeze(0)
+
+            image_t = image_t.to(self.device)
+
+            output = self.model(image_t)
+            prediction = torch.argmax(output)
+            self.classification.append(self.class_list[prediction.data.item()])
+
+        print(self.classification)
+        
+
+    def draw(self):
+        plt.clf()
+        for plot_idx, image_idx in enumerate(list(range(len(self.images))), start=1):
+        
+            label=self.classification[image_idx]
+
+            image_pil = Image.fromarray(self.images[image_idx])
+
+            ax = self.figure.figure.add_subplot(2,5,plot_idx) # define a 5 x 5 subplot matrix
+            plt.imshow(image_pil)
+            ax.xaxis.set_ticklabels([])
+            ax.yaxis.set_ticklabels([])
+            ax.xaxis.set_ticks([])
+            ax.yaxis.set_ticks([])
+            ax.set_xlabel(self.classification[image_idx])
+
+        plt.draw()
+        key = plt.waitforbuttonpress(1)
+        if not plt.fignum_exists(1):
+            print('Terminating')
+            exit(0)
 
 
 # Main code
@@ -32,13 +104,17 @@ def main():
     parser.add_argument('-fn', '--folder_name', type=str, required=True, help='folder name')
     parser.add_argument('-mn', '--model_name', type=str, required=True, help='model name')
     parser.add_argument('-c', '--cuda', default=0, type=int, help='Number of cuda device')
+    parser.add_argument('-v', '--visualize', action='store_true', help='Visualize the results')
 
 
     arglist = [x for x in sys.argv[1:] if not x.startswith('__')]
     args = vars(parser.parse_args(args=arglist))
 
+    device = f'cuda:{args["cuda"]}' if torch.cuda.is_available() else 'cpu' # cuda: 0 index of gpu
 
-     # General Path
+    model = Model() # Instantiate model
+
+    # General Path
     files_path=f'{os.environ["DORA"]}'
     # Image dataset paths
     image_filenames = glob.glob(files_path + '/Images SAVI Dora_the_mug_finder/*.png')
@@ -48,65 +124,28 @@ def main():
     model_path = files_path + f'/models/{args["folder_name"]}/{args["model_name"]}.pkl'
     folder_path =files_path + f'/models/{args["folder_name"]}'
 
-    class_list= GetClassListFromFolder()
-    
-
-    model = Model() # Instantiate model
-
-    device = f'cuda:{args["cuda"]}' if torch.cuda.is_available() else 'cpu' # cuda: 0 index of gpu
-
-    PIL_to_Tensor = transforms.Compose([
-    transforms.Resize((224,224)),
-    transforms.ToTensor()
-    ])
-
     ########################################
     # Load the Model                       #
     ########################################
     model= LoadModel(model_path,model,device)
     model.eval()
 
-    classification=[]
-    for image_filename in image_filenames:
-        image_pill = Image.open(image_filename)
+
+    ########################################
+    # ROS Initialization                   #
+    ########################################
+    rospy.init_node('image_classifier', anonymous=False)
+
+    image = ImageClassifier(model,device)
+
+    rospy.Subscriber("image_publisher", Images, image.callback)
     
-        
-        image_t= PIL_to_Tensor(image_pill)
-        image_t = image_t[0:3]
-        
-        image_t = image_t.unsqueeze(0)
 
-        image_t = image_t.to(device)
 
-        output = model(image_t)
-        prediction = torch.argmax(output)
-        classification.append(class_list[prediction.data.item()])
-
-    figure = plt.figure("Visualization")
-    plt.axis('off')
-    figure.figure.set_size_inches(10,10)
-    plt.legend(loc='best')
-    plt.clf()
-    
-    for plot_idx, image_idx in enumerate(list(range(len(image_filenames))), start=1):
-    
-        label=classification[image_idx]
-
-        image_pil = Image.open(image_filenames[image_idx])
-
-        ax = figure.figure.add_subplot(5,5,plot_idx) # define a 5 x 5 subplot matrix
-        plt.imshow(image_pil)
-        ax.xaxis.set_ticklabels([])
-        ax.yaxis.set_ticklabels([])
-        ax.xaxis.set_ticks([])
-        ax.yaxis.set_ticks([])
-        ax.set_xlabel(classification[image_idx])
-
-    plt.draw()
-    key = plt.waitforbuttonpress(0)
-    if not plt.fignum_exists(1):
-        print('Terminating')
-        exit(0)
+    while not rospy.is_shutdown():
+        if args['visualize']: # Checks if the user wants to visualize the point cloud
+            image.draw()
+        rospy.sleep(1) 
 
 
 
