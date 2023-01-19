@@ -31,7 +31,7 @@ class ImageClassifier:
         self.bridge = CvBridge()
         self.class_list= GetClassListFromFolder()
         self.PIL_to_Tensor = transforms.Compose([
-                            transforms.Resize((224,224)),
+                            transforms.Resize((64,64)),
                             transforms.ToTensor()
                             ])
 
@@ -69,7 +69,10 @@ class ImageClassifier:
         self.pub.publish(self.classification)
         self.update_graph = True
 
-        print(f'{Fore.BLUE}Classified Objects: ' + str(classification.data) for classification in self.classification.classes + Style.RESET_ALL)
+
+        text_print = [classification.data for classification in self.classification.classes]
+
+        print( text_print )
         
 
     def draw(self):
