@@ -132,6 +132,7 @@ def main():
             '13': 4,
             '14': 4
         }
+
         os.system('pcl_ply2pcd ' + filenames[file_idx] + ' pcd_point_cloud.pcd')
         point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
         
@@ -147,8 +148,8 @@ def main():
         # Cluster_dbscan parameters            #
         ########################################
         eps = 0.07
-    
-        
+
+
     vis = o3d.visualization.VisualizerWithKeyCallback()
     visualizer = Visualize(vis)
     vis.register_key_callback(32, visualizer.space_callback)
