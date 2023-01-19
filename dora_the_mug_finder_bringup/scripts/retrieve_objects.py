@@ -132,24 +132,23 @@ def main():
             '13': 4,
             '14': 4
         }
-    else:
-        filename = (files_path + '/rgbd-scenes-v2/bag_scenes/kinect_all_points.ply')
-    
 
-    if args['kinect']==False:
         os.system('pcl_ply2pcd ' + filenames[file_idx] + ' pcd_point_cloud.pcd')
         point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
+        
         ########################################
         # Cluster_dbscan parameters            #
         ########################################
         eps = 0.025
     else:
+        filename = (files_path + '/rgbd-scenes-v2/bag_scenes/kinect_all_points.ply')
         point_cloud_original = o3d.io.read_point_cloud(filename)
+        
         ########################################
         # Cluster_dbscan parameters            #
         ########################################
         eps = 0.07
-
+           
 
     vis = o3d.visualization.VisualizerWithKeyCallback()
     visualizer = Visualize(vis)
@@ -169,11 +168,12 @@ def main():
         # Gets the scene number and nº objects #
         ########################################
         if visualizer.flag_play:
-            parts = filenames[file_idx] .split('/')
-            part = parts[-1]
-            parts = part.split('.')
-            scene_number = parts[0]
-            scene_number_objects = scenes_number_objects[scene_number]
+            if args['kinect']==False:  
+                parts = filenames[file_idx] .split('/')
+                part = parts[-1]
+                parts = part.split('.')
+                scene_number = parts[0]
+                scene_number_objects = scenes_number_objects[scene_number]
 
             ########################################
             # Find two planes                      #
@@ -232,7 +232,7 @@ def main():
             point_cloud_objects_noise = plane_table.outlier_cloud.crop(t.bbox)
     
             # objects
-            cluster_idxs = list(point_cloud_objects_noise.cluster_dbscan(eps=0.025, min_points=100, print_progress=True))
+            cluster_idxs = list(point_cloud_objects_noise.cluster_dbscan(eps=eps, min_points=100, print_progress=True))
             object_idxs = list(set(cluster_idxs))
             object_idxs.remove(-1) #Removes -1 cluster ID (-1 are the points not clustered)
 
@@ -320,7 +320,7 @@ def main():
                 text_number_objects = text_3d(text , font_size=20)
                 text_number_objects = Transform(-x,y,z,0,0,0).rotate(text_number_objects,letter=True)
                 text_number_objects = Transform(0,0,0,tx-1,ty-1.3,tz).translate(text_number_objects)
-            entities.append(text_number_objects)
+                entities.append(text_number_objects)
             entities.append(frame)
             # Displays the entities
             vis.clear_geometries()
