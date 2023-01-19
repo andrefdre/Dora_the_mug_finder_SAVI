@@ -42,7 +42,7 @@ def GetClassListFromFolder():
         classList.append(part)
     return classList
 
-def text_3d(text, font='/usr/share/fonts/truetype/freefont/FreeMono.ttf', font_size=10):
+def text_3d(text,density=10,font='/usr/share/fonts/truetype/freefont/FreeMono.ttf', font_size=10):
     """
     Generate a 3D text point cloud used for visualization.
     :param text: content of the text
@@ -53,7 +53,7 @@ def text_3d(text, font='/usr/share/fonts/truetype/freefont/FreeMono.ttf', font_s
 
     from PIL import Image, ImageFont, ImageDraw
 
-    font_obj = ImageFont.truetype(font, font_size)
+    font_obj = ImageFont.truetype(font, font_size*density)
     font_dim = font_obj.getsize(text)
 
     img = Image.new('RGB', font_dim, color=(255, 255, 255))
@@ -65,6 +65,6 @@ def text_3d(text, font='/usr/share/fonts/truetype/freefont/FreeMono.ttf', font_s
 
     pcd = o3d.geometry.PointCloud()
     pcd.colors = o3d.utility.Vector3dVector(img[img_mask, :].astype(float) / 255.0)
-    pcd.points = o3d.utility.Vector3dVector(indices / 100.0)
+    pcd.points = o3d.utility.Vector3dVector(indices / 100.0 / density)
 
     return pcd
