@@ -6,7 +6,7 @@
 # SAVI, January 2023.
 # --------------------------------------------------
 
-# Other Packages imports
+# General Imports 
 import threading
 import time
 from more_itertools import locate
@@ -20,8 +20,9 @@ import argparse
 import sys
 import os
 import rospy
+import glob
 
-# Our Package imports
+# Oun Package imports
 from dora_the_mug_finder_msg.msg import Object , Point , Classes
 from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Transform
 from dora_the_mug_finder_bringup.src.utils import text_3d

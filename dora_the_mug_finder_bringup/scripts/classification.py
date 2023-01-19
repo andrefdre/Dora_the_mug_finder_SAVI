@@ -22,7 +22,6 @@ from dora_the_mug_finder_bringup.src.utils import LoadModel,GetClassListFromFold
 
 
 class ImageClassifier:
-
     def __init__(self,model,device):
         self.model = model
         self.device = device
@@ -40,7 +39,6 @@ class ImageClassifier:
         self.figure.figure.set_size_inches(10,4)
         plt.legend(loc='best')
         plt.clf()
-        pub = rospy.Publisher('objects_publisher', Object, queue_size=10)
         self.update_graph = False
                             
 
