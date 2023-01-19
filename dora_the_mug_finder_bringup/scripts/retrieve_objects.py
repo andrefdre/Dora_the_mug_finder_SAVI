@@ -95,7 +95,7 @@ def main():
         }
     else:
         filename = (files_path + '/rgbd-scenes-v2/bag_scenes/kinect_all_points.ply')
-        print(filename)
+    
     while not rospy.is_shutdown():
         if args['kinect']==False:
             os.system('pcl_ply2pcd ' + filenames[file_idx] + ' pcd_point_cloud.pcd')
@@ -109,9 +109,20 @@ def main():
             parts = part.split('.')
             scene_number = parts[0]
             scene_number_objects = scenes_number_objects[scene_number]
+            
+            ########################################
+            # Cluster_dbscan parameters            #
+            ########################################
+            eps = 0.025
+
         else:
             point_cloud_original = o3d.io.read_point_cloud(filename)
-            
+
+            ########################################
+            # Cluster_dbscan parameters            #
+            ########################################
+            eps = 0.07
+
         ########################################
         # Find two planes                      #
         ########################################
@@ -137,12 +148,7 @@ def main():
     
         plane_table = PlaneTable(planes) # create a new plane_table instance
         plane_table = plane_table.planetable()  
-    
-        # else:
-        #     point_cloud_original = o3d.io.read_point_cloud(filename)
-        #     plane_table = PlaneDetection(point_cloud_original) # create a new plane instance
-        #     plane_table.segment() # new point cloud are the outliers of this plane detection
-            
+           
         # definition point cloud without table and point cloud only table
         plane_table.outlier_cloud = plane_table.outlier_cloud.voxel_down_sample(voxel_size=0.005)
         
@@ -177,7 +183,7 @@ def main():
         point_cloud_objects_noise = plane_table.outlier_cloud.crop(t.bbox)
   
         # objects
-        cluster_idxs = list(point_cloud_objects_noise.cluster_dbscan(eps=0.025, min_points=100, print_progress=True))
+        cluster_idxs = list(point_cloud_objects_noise.cluster_dbscan(eps=eps, min_points=100, print_progress=True))
         object_idxs = list(set(cluster_idxs))
         object_idxs.remove(-1) #Removes -1 cluster ID (-1 are the points not clustered)
 
@@ -214,7 +220,6 @@ def main():
                 # condition of being object: Z center > 0, be close to the reference, not be too big
                 objects.append(d) #Add the dict of this object to the list
 
-
        #####################################
        # BBox extraction                   #
        #####################################
@@ -245,7 +250,7 @@ def main():
               entities.append(sphere)
               entities.append(object['points'])
               entities.append(bbox_to_draw)
-        print(len(objects))
+     
         # Publish ROS messages
         pub.publish(objects_3d) # Publishes the detected objects
         rate.sleep() # Sleeps to if time < rate
@@ -262,12 +267,9 @@ def main():
                 text = f'number of objects: {scene_number_objects}'
                 text_number_objects = text_3d(text , font_size=20)
                 entities.append(text_number_objects)
-            t.table = Transform(-x,y,z,0,0,0).rotate(t.table,inverse=True)
-            t.table = Transform(0,0,0,tx,ty,tz).translate(t.table)
-            entities.append(t.table)
-            
             entities.append(frame)
             entities.append(point_cloud_original)
+
             # Displays the entities
             o3d.visualization.draw_geometries(entities,
                                             zoom=view['trajectory'][0]['zoom'],
@@ -275,8 +277,6 @@ def main():
                                             lookat=view['trajectory'][0]['lookat'],
                                             up=view['trajectory'][0]['up'])
 
-
-    
 
 if __name__ == "__main__":
     main()
