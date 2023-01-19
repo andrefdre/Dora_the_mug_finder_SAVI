@@ -300,7 +300,7 @@ def main():
                     entities.append(bbox_to_draw)
                     if len(classification.object_names) == len(objects):
                         text = f'{classification.object_names[object_idx]}'
-                        object_name = text_3d(text , font_size=20)
+                        object_name = text_3d(text , font_size=7)
                         object_name = Transform(-x,y,z,0,0,0).rotate(object_name,letter=True)
                         object_name = Transform(0,0,0,center[0]-0.1,center[1]-0.2,center[2]).translate(object_name)
                         object_name.paint_uniform_color([1.0, 0.75, 0.0])
