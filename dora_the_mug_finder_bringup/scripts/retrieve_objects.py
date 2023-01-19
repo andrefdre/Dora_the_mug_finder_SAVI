@@ -88,7 +88,8 @@ def main():
     parser = argparse.ArgumentParser(description='Data Collector')
     parser.add_argument('-v', '--visualize', action='store_true',
                         help='Visualize the point cloud')
-    
+    parser.add_argument('-k', '--kinect', action='store_true',
+                        help='Visualize the point cloud')
     arglist = [x for x in sys.argv[1:] if not x.startswith('__')]
     args = vars(parser.parse_args(args=arglist))
 
@@ -105,33 +106,49 @@ def main():
     ###########################################
     # Object detection Initialization         #
     ###########################################
+    
     files_path=f'{os.environ["DORA"]}'
     
-    # Scene dataset paths
-    filenames = []
-    filenames.append (files_path + '/rgbd-scenes-v2/pc/05.ply')
-    #filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
-    file_idx = 0
+    if args['kinect']==False:    
+        # Scene dataset paths
+        filenames = []
+        filenames.append (files_path + '/rgbd-scenes-v2/pc/03.ply')
+        #filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
+        file_idx = 0
+        
+        scenes_number_objects = {
+            '01': 5,
+            '02': 5,
+            '03': 5,
+            '04': 5,
+            '05': 4,
+            '06': 5,
+            '07': 5,
+            '08': 4,
+            '09': 3,
+            '10': 3,
+            '11': 3,
+            '12': 3,
+            '13': 4,
+            '14': 4
+        }
+    else:
+        filename = (files_path + '/rgbd-scenes-v2/bag_scenes/kinect_all_points.ply')
     
-    scenes_number_objects = {
-        '01': 5,
-        '02': 5,
-        '03': 5,
-        '04': 5,
-        '05': 4,
-        '06': 5,
-        '07': 5,
-        '08': 4,
-        '09': 3,
-        '10': 3,
-        '11': 3,
-        '12': 3,
-        '13': 4,
-        '14': 4
-    }
 
-    os.system('pcl_ply2pcd ' + filenames[file_idx] + ' pcd_point_cloud.pcd')
-    point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
+    if args['kinect']==False:
+        os.system('pcl_ply2pcd ' + filenames[file_idx] + ' pcd_point_cloud.pcd')
+        point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
+        ########################################
+        # Cluster_dbscan parameters            #
+        ########################################
+        eps = 0.025
+    else:
+        point_cloud_original = o3d.io.read_point_cloud(filename)
+        ########################################
+        # Cluster_dbscan parameters            #
+        ########################################
+        eps = 0.07
 
 
     vis = o3d.visualization.VisualizerWithKeyCallback()
@@ -294,15 +311,15 @@ def main():
             ######################################
             # Visualization                      #
             ######################################
-            if scene_number_objects != len(objects):
+            if args['kinect']==False and scene_number_objects != len(objects):
                 print(Fore.RED + 'number of objects is wrong' + Style.RESET_ALL)
 
         if args['visualize'] and visualizer.flag_play: # Checks if the user wants to visualize the point cloud
-            text = f'number of objects: {scene_number_objects}'
-            text_number_objects = text_3d(text , font_size=20)
-            text_number_objects = Transform(-x,y,z,0,0,0).rotate(text_number_objects,letter=True)
-            text_number_objects = Transform(0,0,0,tx-1,ty-1.3,tz).translate(text_number_objects)
-            #entities.append(t.bbox)
+            if args['kinect']==False:
+                text = f'number of objects: {scene_number_objects}'
+                text_number_objects = text_3d(text , font_size=20)
+                text_number_objects = Transform(-x,y,z,0,0,0).rotate(text_number_objects,letter=True)
+                text_number_objects = Transform(0,0,0,tx-1,ty-1.3,tz).translate(text_number_objects)
             entities.append(text_number_objects)
             entities.append(frame)
             # Displays the entities
@@ -320,8 +337,6 @@ def main():
         pub.publish(objects_3d) # Publishes the detected objects
         rate.sleep() # Sleeps to if time < rate
 
-
-    
 
 if __name__ == "__main__":
     main()
