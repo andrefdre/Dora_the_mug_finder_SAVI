@@ -31,7 +31,7 @@ class Dataset(torch.utils.data.Dataset):
 
         # Create a set of transformations
         self.transforms = transforms.Compose([
-            transforms.Resize((224,224)),
+            transforms.Resize((64,64)),
             transforms.ToTensor()
         ])
        

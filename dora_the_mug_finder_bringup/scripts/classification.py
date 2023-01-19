@@ -13,6 +13,7 @@ from PIL import Image
 from cv_bridge import CvBridge, CvBridgeError
 import rospy
 from std_msgs.msg import String
+from colorama import Fore, Style
 
 # Own package imports
 from dora_the_mug_finder_msg.msg import Object , Images , Classes
@@ -68,7 +69,7 @@ class ImageClassifier:
         self.pub.publish(self.classification)
         self.update_graph = True
 
-        print(self.classification)
+        print(f'{Fore.BLUE}Classified Objects: ' + str(classification.data) for classification in self.classification.classes + Style.RESET_ALL)
         
 
     def draw(self):

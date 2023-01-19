@@ -82,7 +82,7 @@ def main():
     ########################################
 
     # Sample ony a few images for develop
-    image_filenames = random.sample(image_filenames,k=700)
+    #image_filenames = random.sample(image_filenames,k=700)
     train_image_filenames,test_image_filenames = train_test_split(image_filenames,test_size=0.2)
 
     # Creates the train dataset
