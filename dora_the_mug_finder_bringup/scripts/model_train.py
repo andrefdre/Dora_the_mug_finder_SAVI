@@ -74,7 +74,7 @@ def main():
     learning_rate = args['learning_rate']
     maximum_num_epochs = args['max_epoch'] 
     termination_loss_threshold =  args['loss_threshold']
-    loss_function = torch.nn.CrossEntropyLoss()
+    loss_function = torch.nn.NLLLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     ########################################
