@@ -34,10 +34,12 @@ class Dataset(torch.utils.data.Dataset):
             transforms.Resize((64,64)),
             transforms.ToTensor()
         ])
-       
+    
+    # Function that will get the class from the file structure
     def getClassFromFilename(self, filename):
         parts = filename.split('/')
-        part = parts[6]
+        # Get the third item counting from the end
+        part = parts[len(parts)-3]
         return part
 
 
