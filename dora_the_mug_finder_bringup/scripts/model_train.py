@@ -165,7 +165,8 @@ def main():
             label_t_predicted = model.forward(image_t)
  
             # Compute the error based on the predictions
-            loss = loss_function(label_t_predicted, label_t)
+            m = torch.nn.LogSoftmax(dim=1)
+            loss = loss_function(m(label_t_predicted), label_t)
 
             # Update the model, i.e. the neural network's weights 
             optimizer.zero_grad() # resets the weights to make sure we are not accumulating
@@ -191,7 +192,8 @@ def main():
             label_t_predicted = model.forward(image_t)
 
             # Compute the error based on the predictions
-            loss = loss_function(label_t_predicted, label_t)
+            m = torch.nn.LogSoftmax(dim=1)
+            loss = loss_function(m(label_t_predicted), label_t)
 
             test_losses.append(loss.data.item())
 
