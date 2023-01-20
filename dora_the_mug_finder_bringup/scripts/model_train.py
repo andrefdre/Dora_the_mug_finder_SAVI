@@ -59,8 +59,8 @@ def main():
     ])
 
     class_list=GetClassListFromFolder()
+    print(f'{Fore.BLUE}The dataset has {len(image_filenames)} images and {len(class_list)} classes {Style.RESET_ALL}')
 
-    # Define hyper parameters
     model_path = files_path + f'/models/{args["folder_name"]}/{args["model_name"]}.pkl'
     folder_path =files_path + f'/models/{args["folder_name"]}'
     # Checks if the models folder exists if not create
@@ -71,6 +71,7 @@ def main():
 
     model = Model() # Instantiate model
 
+    # Define hyper parameters
     learning_rate = args['learning_rate']
     maximum_num_epochs = args['max_epoch'] 
     termination_loss_threshold =  args['loss_threshold']
