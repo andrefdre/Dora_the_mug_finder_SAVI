@@ -1,4 +1,4 @@
 more-itertools
 open3d
 numpy
-cv2
+opencv-python
