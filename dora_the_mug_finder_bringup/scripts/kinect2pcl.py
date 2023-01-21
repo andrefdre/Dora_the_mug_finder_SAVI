@@ -114,8 +114,6 @@ class Cloud:
             else:
                 rgb = [self.convert_rgbUint32_to_tuple(rgb) for x,y,z,rgb in cloud_data ]
 
-          
-
             # Combine
             open3d_cloud.points = o3d.utility.Vector3dVector(np.array(xyz))
             open3d_cloud.colors = o3d.utility.Vector3dVector(np.array(rgb)/255.0)
@@ -133,7 +131,7 @@ class Cloud:
         for clr in open3d_cloud.colors:
             clr = Point(clr[0], clr[1], clr[2])
             self.kinect.rgb.append(clr)
-        
+
     # ---------------------------------
     # Termination
     # ---------------------------------

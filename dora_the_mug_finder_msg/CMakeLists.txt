@@ -55,6 +55,7 @@ add_message_files(
   Point.msg
   Images.msg
   Kinect_ply.msg
+  Classes.msg
 )
 
 ## Generate services in the 'srv' folder

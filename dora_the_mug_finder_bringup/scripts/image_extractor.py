@@ -39,7 +39,7 @@ class Image:
         
         # Scene dataset paths
         filenames = []
-        filenames.append (files_path + '/rgbd-scenes-v2/imgs/scene_03/00000-color.png')
+        filenames.append (files_path + '/rgbd-scenes-v2/imgs/scene_05/00000-color.png')
 
         points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
         bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
@@ -123,11 +123,12 @@ def main():
     image = Image()
 
     rospy.Subscriber("objects_publisher", Object, image.callback)
+    rate = rospy.Rate(10) # 10hz
 
     while not rospy.is_shutdown():
         if args['visualize']: # Checks if the user wants to visualize the point cloud
             image.draw()
-        rospy.sleep(1) 
+        rate.sleep() # Sleeps to if time < rate
         
 
 
