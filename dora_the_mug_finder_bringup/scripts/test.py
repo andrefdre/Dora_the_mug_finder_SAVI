@@ -7,32 +7,40 @@ from scipy.spatial.transform import Rotation as R
 
 import numpy as np
 
-# input data
-ins = [[1, 1, 2]]  # <- points
-out = [[0, 2, 1]] # <- mapped to
-# calculations
-l = len(ins)
-B = np.vstack([np.transpose(ins), np.ones(l)])
-D = 1.0 / np.linalg.det(B)
-entry = lambda r,d: np.linalg.det(np.delete(np.vstack([r, B]), (d+1), axis=0))
-M = [[(-1)**i * D * entry(R, i) for i in range(l)] for R in np.transpose(out)]
-print(np.array(M))
+
+
+a = np.array([4, 5, 6], dtype=np.float32)
+b = np.vstack(a)
+
+print(a)
+print(b)
+
+# # input data
+# ins = [[1, 1, 2], [2, 3, 0], [3, 2, -2], [-2, 2, 3]]  # <- points
+# out = [[0, 2, 1], [1, 2, 2], [-2, -1, 6], [4, 1, -3]] # <- mapped to
+# # calculations
+# l = len(ins)
+# B = np.vstack([np.transpose(ins), np.ones(l)])
+# D = 1.0 / np.linalg.det(B)
+# entry = lambda r,d: np.linalg.det(np.delete(np.vstack([r, B]), (d+1), axis=0))
+# M = [[(-1)**i * D * entry(R, i) for i in range(l)] for R in np.transpose(out)]
+# print(np.array(M))
 
 
 
-A, t = np.hsplit(np.array(M), [l-1])
-new = np.zeros((4,4))
-new[0:3,0:3] = A
-t = np.transpose(t)[0]
-new[0:3,3] = t
-new[3,3] = 1
-print("new:\n", new)
+# A, t = np.hsplit(np.array(M), [l-1])
+# new = np.zeros((4,4))
+# new[0:3,0:3] = A
+# t = np.transpose(t)[0]
+# new[0:3,3] = t
+# new[3,3] = 1
+# print("new:\n", new)
 
-print(np.linalg.inv(new))
-# output
+# print(np.linalg.inv(new))
+# # output
 
-print("Affine transformation matrix:\n", A)
-print("Affine transformation translation vector:\n", t)
+# print("Affine transformation matrix:\n", A)
+# print("Affine transformation translation vector:\n", t)
 
 
 

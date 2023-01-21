@@ -40,9 +40,7 @@ class Image:
         
         # Pose dataset paths
         filename_pose = (files_path + '/rgbd-scenes-v2/pc/02.pose')
-        self.matrix(filename_pose)
-        # print(self.rotation_matrix)
-        # print(self.translation_matrix)
+        
 
         # Scene dataset paths
         filenames = []
@@ -51,20 +49,21 @@ class Image:
         points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
         bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
         
-        # ????????????????????????????????????????????????????????????????'
+        # ????????????????????????????????????????????????????????????????
 
-        print('points: \n',points)
-        l,w = points.shape
-        for idx, point in enumerate(points):
-            point1 = np.ones((1,4))
-            point1[:,0:3] = points[idx]
-            point1 = np.transpose(point1)
-            point1 = np.dot(self.matrix,point1)
-            points[idx,:]=np.transpose(point1[0:3,:]) 
+        self.matrix(filename_pose)
+        # print('points: \n',points)
+        # print(self.matrix_inv)
+        for idx, p in enumerate(points):
+            point = np.ones((1,4))
+            point[:,0:3] = points[idx]
+            point = np.transpose(point)
+            point = np.dot(self.matrix_inv,point)
+            points[idx,:]=np.transpose(point[0:3,:]) 
         
-        print('points 1 new: \n', points)  
+        # print('points 1 new: \n', points)  
         
-        # ????????????????????????????????????????????????????????????????'   
+        # ????????????????????????????????????????????????????????????????   
 
         # Camera parameters
         center = [320 , 240]
@@ -77,12 +76,12 @@ class Image:
                                 [0,            0,            1]])
 
         # Project the 3D points to the 2D image plane
-        points_2d = cv2.projectPoints(points, np.identity(3), np.zeros(3), camera_matrix, None,)[0]
+        points_2d = cv2.projectPoints(points, self.rot_matrix, self.trans_matrix, camera_matrix, None,)[0]
         print('points_2d: \n',points_2d)
         bbox_2d = []
 
         for corners in bbox_3d:
-            bbox_2d.append(cv2.projectPoints(corners,  np.identity(3), np.zeros(3), camera_matrix, None,)[0])
+            bbox_2d.append(cv2.projectPoints(corners, self.rot_matrix, self.trans_matrix, camera_matrix, None,)[0])
 
         # Scale the points to image pixels
         points_2d = np.round(points_2d).astype(int)
@@ -100,7 +99,7 @@ class Image:
             image = cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
 
             for idx,point_2d in enumerate(points_2d):
-                image[point_2d[0][1]-2:point_2d[0][1]+2,point_2d[0][0]-2:point_2d[0][0]+2]=color
+                image[point_2d[0][1]-5:point_2d[0][1]+5,point_2d[0][0]-5:point_2d[0][0]+5]=color
                 #image = cv2.rectangle(image, bbox_2d[idx][0][0], bbox_2d[idx][1][0], color, thickness)
                 cropped_image = image[bbox_2d[idx][1][0][1]:bbox_2d[idx][0][0][1],bbox_2d[idx][0][0][0]:bbox_2d[idx][1][0][0]]
                 height ,width , _ = cropped_image.shape
@@ -113,26 +112,37 @@ class Image:
         
         with open(filename, "r") as pose:
             file_pose = pose.readlines()
-
             vector_pose_str = file_pose[233]
 
             vector_pose_array = vector_pose_str.split(' ')
-            r = R.from_quat([vector_pose_array[3], vector_pose_array[1], vector_pose_array[2], vector_pose_array[0]])
+            
+            # rotation matrix
+            r = R.from_quat([vector_pose_array[1], vector_pose_array[2], vector_pose_array[3], vector_pose_array[0]])
             self.rot_matrix = r.as_matrix()
+            
+            # translation matrix
             self.trans_matrix = np.array([vector_pose_array[4], vector_pose_array[5], vector_pose_array[6]], dtype=np.float32)
+            # self.trans_matrix = np.vstack(trans_matrix)
 
+            # homogeneous transformation matrix (4,4) 
             l = 4
             self.matrix = np.zeros((l,l))
             self.matrix[0:3,0:3] = self.rot_matrix
-            self.trans_matrix = np.transpose(self.trans_matrix)[0]
             self.matrix[0:3,3] = self.trans_matrix
             self.matrix[3,3] = 1
 
+            # inverse matrices
             self.matrix_inv = np.linalg.inv(self.matrix)
-            # print("matrix inv:\n", self.matrix_inv)
             self.rot_matrix_inv, self.trans_matrix_inv = np.hsplit(np.array(self.matrix_inv), [l-1])
             self.rot_matrix_inv = self.rot_matrix_inv[0:3,:]
             self.trans_matrix_inv = self.trans_matrix_inv[0:3,:]
+
+            # prints
+            # print('rot matrix: \n', self.rot_matrix)
+            # print("trans:\n", self.trans_matrix)
+            # print("matrix:\n", self.matrix)
+            
+            # print("matrix inv:\n", self.matrix_inv)
             # print('rot inv: \n', self.rot_matrix_inv)
             # print('trans inv:\n', self.trans_matrix_inv)
 
