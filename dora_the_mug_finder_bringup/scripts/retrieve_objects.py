@@ -22,6 +22,10 @@ import os
 import rospy
 import glob
 from std_msgs.msg import String
+from sensor_msgs.msg import PointCloud2
+import sensor_msgs.point_cloud2 as pc2
+from ctypes import * # To convert float to uint32
+
 
 # Oun Package imports
 from dora_the_mug_finder_msg.msg import Object , Point , Classes , Kinect_ply
@@ -62,17 +66,50 @@ class ROSHandler:
         os.system('pcl_ply2pcd ' + self.filename + ' pcd_point_cloud.pcd')
         self.point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
         self.eps = 0.025
+        convert_rgbUint32_to_tuple = lambda rgb_uint32: ((rgb_uint32 & 0x00ff0000)>>16, (rgb_uint32 & 0x0000ff00)>>8, (rgb_uint32 & 0x000000ff))
+        convert_rgbFloat_to_tuple = lambda rgb_float: convert_rgbUint32_to_tuple(int(cast(pointer(c_float(rgb_float)), POINTER(c_uint32)).contents.value))
+        self.convert_rgbFloat_to_tuple = convert_rgbFloat_to_tuple
+        self.convert_rgbUint32_to_tuple = convert_rgbUint32_to_tuple
                             
 
     def callback_class(self,data):
         self.object_names = [name_string.data for name_string in data.classes]
 
-    def callback_kinect_ply(self,data):
+    def callback_kinect_ply(self,ros_cloud):
+        # Get cloud data from ros_cloud
+        field_names=[field.name for field in ros_cloud.fields]
+        cloud_data = list(pc2.read_points(ros_cloud, field_names = field_names))
+
+        # Check if it's empty
         open3d_cloud = o3d.geometry.PointCloud()
-        xyz = [(point.x,point.y,point.z) for point in data.point ]
-        rgb = [(point.x,point.y,point.z) for point in data.rgb ]
-        open3d_cloud.points = o3d.utility.Vector3dVector(np.array(xyz))
-        open3d_cloud.colors = o3d.utility.Vector3dVector(np.array(rgb))
+
+        if len(cloud_data)==0:
+            print(Style.BRIGHT, Fore.YELLOW, "Received Point Cloud message is empty", Style.RESET_ALL)
+            return None
+
+        # Set open3d_cloud
+        if "rgb" in field_names:
+            IDX_RGB_IN_FIELD=3 # x, y, z, rgb
+
+            # Get xyz
+            xyz = [(x,y,z) for x,y,z,rgb in cloud_data ]
+
+            # Get RGB
+            # Check whether int or float
+            if type(cloud_data[0][IDX_RGB_IN_FIELD])==float:
+                rgb = [self.convert_rgbFloat_to_tuple(rgb) for x,y,z,rgb in cloud_data ]
+
+            else:
+                rgb = [self.convert_rgbUint32_to_tuple(rgb) for x,y,z,rgb in cloud_data ]
+
+            # Combine
+            open3d_cloud.points = o3d.utility.Vector3dVector(np.array(xyz))
+            open3d_cloud.colors = o3d.utility.Vector3dVector(np.array(rgb)/255.0)
+
+        else:
+            xyz = [(x,y,z) for x,y,z in cloud_data ] # get xyz
+            open3d_cloud.points = o3d.utility.Vector3dVector(np.array(xyz))
+
         self.kinect_cloud = open3d_cloud
         
         print("hi")
@@ -134,7 +171,7 @@ def main():
     pub = rospy.Publisher('objects_publisher', Object, queue_size=10)
     rospy.Subscriber("class_publisher", Classes, ros_handler.callback_class)
     rospy.Subscriber("scene_publisher", String, ros_handler.callback_scene)
-    rospy.Subscriber("open3d_cloud", Kinect_ply, ros_handler.callback_kinect_ply)
+    rospy.Subscriber("/camera/depth_registered/points", PointCloud2, ros_handler.callback_kinect_ply)
     rospy.init_node('objects', anonymous=False)
     rate = rospy.Rate(10) # 10hz
 
@@ -226,6 +263,7 @@ def main():
             t.voxel_down_sample(plane_table.inlier_cloud,voxel_size=0.005)
             t.cluster(t.down_sampled_plane)
             t.table(t.cluster_idxs, t.object_idxs, t.down_sampled_plane)
+            
 
             ########################################
             # Frame alignment                      #
@@ -239,7 +277,7 @@ def main():
             
             plane_table.outlier_cloud = Transform(-x,-y,-z,0,0,0).rotate(plane_table.outlier_cloud)
             t.table = Transform(-x,-y,-z,0,0,0).rotate(t.table)
-
+            
             ########################################
             # Objects Detection                    #
             ########################################
@@ -250,9 +288,10 @@ def main():
             point_cloud_objects_noise = plane_table.outlier_cloud.crop(t.bbox)
     
             # objects
-            cluster_idxs = list(point_cloud_objects_noise.cluster_dbscan(eps=eps, min_points=100, print_progress=True))
+            cluster_idxs = list(point_cloud_objects_noise.cluster_dbscan(eps=eps, min_points=100, print_progress=False))
             object_idxs = list(set(cluster_idxs))
-            object_idxs.remove(-1) #Removes -1 cluster ID (-1 are the points not clustered)
+            if len(object_idxs)>1:
+                object_idxs.remove(-1) #Removes -1 cluster ID (-1 are the points not clustered)
 
             objects = []    #Create the objects list
             threshold_z = 0
@@ -341,6 +380,9 @@ def main():
             text_number_objects = Transform(0,0,0,tx-1,ty-1.3,tz).translate(text_number_objects)
             entities.append(text_number_objects)
             entities.append(frame)
+            t.table = Transform(-x,y,z,0,0,0).rotate(t.table,inverse=True)
+            t.table = Transform(0,0,0,tx,ty,tz).translate(t.table)
+            entities.append(t.table)
             # Displays the entities
             vis.clear_geometries()
             vis.add_geometry(point_cloud_original,reset_bounding_box=False)

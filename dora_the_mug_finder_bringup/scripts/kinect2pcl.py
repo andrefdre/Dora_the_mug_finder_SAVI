@@ -6,6 +6,7 @@
 # --------------------------------------------------
 # This code converts a ROS PointCloud2 message to Open3d format and sends a message with the converted point cloud
 
+import math
 import rospy
 from sensor_msgs.msg import PointCloud2
 import sensor_msgs.point_cloud2 as pc2
@@ -63,7 +64,7 @@ class Cloud:
 
         # Get cloud data from ros_cloud
         field_names=[field.name for field in ros_cloud.fields]
-        cloud_data = list(pc2.read_points(ros_cloud, skip_nans=True, field_names = field_names))
+        cloud_data = list(pc2.read_points(ros_cloud, field_names = field_names))
 
         # Check if it's empty
         open3d_cloud = o3d.geometry.PointCloud()
@@ -98,6 +99,8 @@ class Cloud:
         kinect = Kinect_ply()
         # Append point to the correct message field
         for pt in open3d_cloud.points:
+            if math.isnan(pt[0]):
+                pt = [0,0,0]
             pt = Point(pt[0], pt[1], pt[2]) 
             kinect.point.append(pt)
 
