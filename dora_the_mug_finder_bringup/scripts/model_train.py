@@ -42,7 +42,7 @@ def main():
                         help='Number of cuda device')
     parser.add_argument('-loss', '--loss_threshold', default=0.00001, type=float,
                         help='Loss threshold criteria for when to stop')
-    parser.add_argument('-lr', '--learning_rate', default=0.001, type=float,
+    parser.add_argument('-lr', '--learning_rate', default=0.01, type=float,
                         help='Learning rate')
 
     arglist = [x for x in sys.argv[1:] if not x.startswith('__')]
@@ -59,8 +59,8 @@ def main():
     ])
 
     class_list=GetClassListFromFolder()
+    print(f'{Fore.BLUE}The dataset has {len(image_filenames)} images and {len(class_list)} classes {Style.RESET_ALL}')
 
-    # Define hyper parameters
     model_path = files_path + f'/models/{args["folder_name"]}/{args["model_name"]}.pkl'
     folder_path =files_path + f'/models/{args["folder_name"]}'
     # Checks if the models folder exists if not create
@@ -71,10 +71,11 @@ def main():
 
     model = Model() # Instantiate model
 
+    # Define hyper parameters
     learning_rate = args['learning_rate']
     maximum_num_epochs = args['max_epoch'] 
     termination_loss_threshold =  args['loss_threshold']
-    loss_function = torch.nn.CrossEntropyLoss()
+    loss_function = torch.nn.NLLLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     ########################################
@@ -82,7 +83,7 @@ def main():
     ########################################
 
     # Sample ony a few images for develop
-    image_filenames = random.sample(image_filenames,k=700)
+    #image_filenames = random.sample(image_filenames,k=10000)
     train_image_filenames,test_image_filenames = train_test_split(image_filenames,test_size=0.2)
 
     # Creates the train dataset
@@ -165,7 +166,8 @@ def main():
             label_t_predicted = model.forward(image_t)
  
             # Compute the error based on the predictions
-            loss = loss_function(label_t_predicted, label_t)
+            m = torch.nn.LogSoftmax(dim=1)
+            loss = loss_function(m(label_t_predicted), label_t)
 
             # Update the model, i.e. the neural network's weights 
             optimizer.zero_grad() # resets the weights to make sure we are not accumulating
@@ -191,7 +193,8 @@ def main():
             label_t_predicted = model.forward(image_t)
 
             # Compute the error based on the predictions
-            loss = loss_function(label_t_predicted, label_t)
+            m = torch.nn.LogSoftmax(dim=1)
+            loss = loss_function(m(label_t_predicted), label_t)
 
             test_losses.append(loss.data.item())
 

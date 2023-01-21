@@ -6,7 +6,7 @@
 # SAVI, January 2023.
 # --------------------------------------------------
 
-# Other Packages imports
+# General Imports 
 import threading
 import time
 from more_itertools import locate
@@ -20,8 +20,10 @@ import argparse
 import sys
 import os
 import rospy
+import glob
+from std_msgs.msg import String
 
-# Our Package imports
+# Oun Package imports
 from dora_the_mug_finder_msg.msg import Object , Point , Classes
 from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Transform
 from dora_the_mug_finder_bringup.src.utils import text_3d
@@ -49,18 +51,35 @@ view = {
 
 
 
+# Class that will deal with ROS messages
+class ROSHandler:
 
-class Classification:
-
-    def __init__(self):
+    def __init__(self,files_path):
         self.update_names = False
         self.object_names = []
+        self.files_path = files_path
+        self.scene_name = 'scene_01'
+        self.filename = self.files_path + '/rgbd-scenes-v2/pc/01.ply'
+        os.system('pcl_ply2pcd ' + self.filename + ' pcd_point_cloud.pcd')
+        self.point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
                             
 
-    def callback(self,data):
+    def callback_class(self,data):
         self.object_names = [name_string.data for name_string in data.classes]
 
+    def callback_scene(self,data):
+        if data.data=='kinect':
+            self.scene_name = data.data
+        else:
+            self.scene_name = data.data
+            scene_number = self.scene_name.split('_')
+            self.filename = self.files_path + f'/rgbd-scenes-v2/pc/{scene_number[-1]}.ply'
+            os.system('pcl_ply2pcd ' + self.filename + ' pcd_point_cloud.pcd')
+            self.point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
 
+
+
+# Class that will deal with visualization
 class Visualize:
     def __init__(self,vis):
         self.vis = vis
@@ -96,10 +115,13 @@ def main():
     ###########################################
     # Ros Initialization                      #
     ###########################################
-    classification = Classification()
+    files_path=f'{os.environ["DORA"]}'
+
+    ros_handler = ROSHandler(files_path)
 
     pub = rospy.Publisher('objects_publisher', Object, queue_size=10)
-    rospy.Subscriber("class_publisher", Classes, classification.callback)
+    rospy.Subscriber("class_publisher", Classes, ros_handler.callback_class)
+    rospy.Subscriber("scene_publisher", String, ros_handler.callback_scene)
     rospy.init_node('objects', anonymous=False)
     rate = rospy.Rate(10) # 10hz
 
@@ -150,13 +172,14 @@ def main():
         eps = 0.07
 
 
+
     vis = o3d.visualization.VisualizerWithKeyCallback()
     visualizer = Visualize(vis)
     vis.register_key_callback(32, visualizer.space_callback)
     
     vis.create_window("Scene")
     ctr = vis.get_view_control()
-    vis.add_geometry(point_cloud_original)
+    vis.add_geometry(ros_handler.point_cloud_original)
     ctr.set_front(view['trajectory'][0]['front'])
     ctr.set_up(view['trajectory'][0]['up'])
     ctr.set_lookat(view['trajectory'][0]['lookat'])
@@ -168,17 +191,22 @@ def main():
         # Gets the scene number and nº objects #
         ########################################
         if visualizer.flag_play:
-            if args['kinect']==False:  
-                parts = filenames[file_idx] .split('/')
-                part = parts[-1]
-                parts = part.split('.')
-                scene_number = parts[0]
-                scene_number_objects = scenes_number_objects[scene_number]
+            ####################################
+            # Initialization of loop           #
+            ####################################
+            parts = ros_handler.filename.split('/')
+            part = parts[-1]
+            parts = part.split('.')
+            scene_number = parts[0]
+            scene_number_objects = scenes_number_objects[scene_number]
 
+            # Creates copy of the information coming from ros to prevent changing during middle of the code
+            point_cloud_original = deepcopy(ros_handler.point_cloud_original)  
+            scene_name = ros_handler.scene_name
             ########################################
             # Find two planes                      #
             ########################################
-            # find two planes: table and another        
+            # find two planes: table and another     
             point_cloud_twoplanes = deepcopy(point_cloud_original) 
             number_of_planes = 2
             planes = []
@@ -291,6 +319,7 @@ def main():
                 # Gets the center points
                 center = object['points'].get_center()
                 objects_3d.center.append(Point(center[0],center[1],center[2]))
+                objects_3d.scene = String(scene_name)
 
                 # Creates the entities to be drawn
                 sphere =o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
@@ -299,8 +328,9 @@ def main():
                 if args['visualize']: # Checks if the user wants to visualize the point cloud
                     entities.append(sphere)
                     entities.append(bbox_to_draw)
-                    if len(classification.object_names) == len(objects):
-                        text = f'{classification.object_names[object_idx]}'
+
+                    if len(ros_handler.object_names) == len(objects):
+                        text = f'{ros_handler.object_names[object_idx]}'
                         object_name = text_3d(text , font_size=7)
                         object_name = Transform(-x,y,z,0,0,0).rotate(object_name,letter=True)
                         object_name = Transform(0,0,0,center[0]-0.1,center[1]-0.2,center[2]).translate(object_name)
