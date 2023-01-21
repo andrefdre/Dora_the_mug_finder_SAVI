@@ -1,0 +1,2 @@
+Point[] point
+Point[] rgb

@@ -107,7 +107,8 @@ def main():
     parser = argparse.ArgumentParser(description='Data Collector')
     parser.add_argument('-v', '--visualize', action='store_true',
                         help='Visualize the point cloud')
-    
+    parser.add_argument('-k', '--kinect', action='store_true',
+                        help='Visualize the point cloud')
     arglist = [x for x in sys.argv[1:] if not x.startswith('__')]
     args = vars(parser.parse_args(args=arglist))
 
@@ -126,24 +127,51 @@ def main():
 
     ###########################################
     # Object detection Initialization         #
-    ###########################################    
-    scenes_number_objects = {
-        '01': 5,
-        '02': 5,
-        '03': 5,
-        '04': 5,
-        '05': 4,
-        '06': 5,
-        '07': 5,
-        '08': 4,
-        '09': 3,
-        '10': 3,
-        '11': 3,
-        '12': 3,
-        '13': 4,
-        '14': 4,
-        'kinect' : 0
-    }
+    ###########################################
+    
+    files_path=f'{os.environ["DORA"]}'
+    
+    if args['kinect']==False:    
+        # Scene dataset paths
+        filenames = []
+        filenames.append (files_path + '/rgbd-scenes-v2/pc/03.ply')
+        #filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
+        file_idx = 0
+        
+        scenes_number_objects = {
+            '01': 5,
+            '02': 5,
+            '03': 5,
+            '04': 5,
+            '05': 4,
+            '06': 5,
+            '07': 5,
+            '08': 4,
+            '09': 3,
+            '10': 3,
+            '11': 3,
+            '12': 3,
+            '13': 4,
+            '14': 4
+        }
+
+        os.system('pcl_ply2pcd ' + filenames[file_idx] + ' pcd_point_cloud.pcd')
+        point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
+        
+        ########################################
+        # Cluster_dbscan parameters            #
+        ########################################
+        eps = 0.025
+    else:
+        filename = (files_path + '/rgbd-scenes-v2/bag_scenes/kinect_all_points.ply')
+        point_cloud_original = o3d.io.read_point_cloud(filename)
+        
+        ########################################
+        # Cluster_dbscan parameters            #
+        ########################################
+        eps = 0.07
+
+
 
     vis = o3d.visualization.VisualizerWithKeyCallback()
     visualizer = Visualize(vis)
@@ -232,7 +260,7 @@ def main():
             point_cloud_objects_noise = plane_table.outlier_cloud.crop(t.bbox)
     
             # objects
-            cluster_idxs = list(point_cloud_objects_noise.cluster_dbscan(eps=0.025, min_points=100, print_progress=True))
+            cluster_idxs = list(point_cloud_objects_noise.cluster_dbscan(eps=eps, min_points=100, print_progress=True))
             object_idxs = list(set(cluster_idxs))
             object_idxs.remove(-1) #Removes -1 cluster ID (-1 are the points not clustered)
 
@@ -300,9 +328,10 @@ def main():
                 if args['visualize']: # Checks if the user wants to visualize the point cloud
                     entities.append(sphere)
                     entities.append(bbox_to_draw)
+
                     if len(ros_handler.object_names) == len(objects):
                         text = f'{ros_handler.object_names[object_idx]}'
-                        object_name = text_3d(text , font_size=20)
+                        object_name = text_3d(text , font_size=7)
                         object_name = Transform(-x,y,z,0,0,0).rotate(object_name,letter=True)
                         object_name = Transform(0,0,0,center[0]-0.1,center[1]-0.2,center[2]).translate(object_name)
                         object_name.paint_uniform_color([1.0, 0.75, 0.0])
@@ -312,16 +341,16 @@ def main():
             ######################################
             # Visualization                      #
             ######################################
-            if scene_number_objects != len(objects):
+            if args['kinect']==False and scene_number_objects != len(objects):
                 print(Fore.RED + 'number of objects is wrong' + Style.RESET_ALL)
 
         if args['visualize'] and visualizer.flag_play: # Checks if the user wants to visualize the point cloud
-            text = f'number of objects: {scene_number_objects}'
-            text_number_objects = text_3d(text , font_size=20)
-            text_number_objects = Transform(-x,y,z,0,0,0).rotate(text_number_objects,letter=True)
-            text_number_objects = Transform(0,0,0,tx-1,ty-1.3,tz).translate(text_number_objects)
-            #entities.append(t.bbox)
-            entities.append(text_number_objects)
+            if args['kinect']==False:
+                text = f'number of objects: {scene_number_objects}'
+                text_number_objects = text_3d(text , font_size=20)
+                text_number_objects = Transform(-x,y,z,0,0,0).rotate(text_number_objects,letter=True)
+                text_number_objects = Transform(0,0,0,tx-1,ty-1.3,tz).translate(text_number_objects)
+                entities.append(text_number_objects)
             entities.append(frame)
             # Displays the entities
             vis.clear_geometries()
@@ -338,8 +367,6 @@ def main():
         pub.publish(objects_3d) # Publishes the detected objects
         rate.sleep() # Sleeps to if time < rate
 
-
-    
 
 if __name__ == "__main__":
     main()

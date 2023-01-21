@@ -1,0 +1,1 @@
+dora_the_mug_finder_bringup/bag/kinect.bag filter=lfs diff=lfs merge=lfs -text
