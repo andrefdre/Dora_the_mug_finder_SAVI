@@ -9,6 +9,7 @@ import glob
 import io
 import rospkg
 
+
 from std_msgs.msg import String
 
 
@@ -38,11 +39,13 @@ def main():
     path = rospack.get_path('dora_the_mug_finder_bringup')
     parts = path.split('/')
     logo_path =''
+    kinect_path =''
     for part in parts[0:len(parts)-1]:
         logo_path += part + '/'
+        kinect_path += part + '/'
 
     logo_path += '/Docs/logo_png.png'
-    print(logo_path)
+    kinect_path += '/Docs/kinect.png'
 
 
     #################################
@@ -52,7 +55,7 @@ def main():
     second_col = [[sg.Button("scene_04")] , [sg.Image(convToBytes(Image.open(filenames[3]),resize=(100,100)))] , [sg.Button("scene_05")] , [sg.Image(convToBytes(Image.open(filenames[4]),resize=(100,100)))] , [sg.Button("scene_06")], [sg.Image(convToBytes(Image.open(filenames[5]),resize=(100,100)))]]
     third_col = [[sg.Button("scene_07")] , [sg.Image(convToBytes(Image.open(filenames[6]),resize=(100,100)))] , [sg.Button("scene_08")] , [sg.Image(convToBytes(Image.open(filenames[7]),resize=(100,100)))] , [sg.Button("scene_09")] , [sg.Image(convToBytes(Image.open(filenames[8]),resize=(100,100)))]]
     fourth_col = [[sg.Button("scene_10")] , [sg.Image(convToBytes(Image.open(filenames[9]),resize=(100,100)))] , [sg.Button("scene_11")] , [sg.Image(convToBytes(Image.open(filenames[10]),resize=(100,100)))] , [sg.Button("scene_12")] , [sg.Image(convToBytes(Image.open(filenames[11]),resize=(100,100)))]]
-    fifth_col = [[sg.Button("scene_13")] , [sg.Image(convToBytes(Image.open(filenames[12]),resize=(100,100)))] , [sg.Button("scene_14")] , [sg.Image(convToBytes(Image.open(filenames[13]),resize=(100,100)))] , [sg.Button("Kinect")]]
+    fifth_col = [[sg.Button("scene_13")] , [sg.Image(convToBytes(Image.open(filenames[12]),resize=(100,100)))] , [sg.Button("scene_14")] , [sg.Image(convToBytes(Image.open(filenames[13]),resize=(100,100)))] , [sg.Button("Kinect")] , [sg.Image(convToBytes(Image.open(kinect_path),resize=(100,100)))] ]
     logo_col = [[sg.Text("Dora The Mug Finder")] , [sg.Image(convToBytes(Image.open(logo_path),resize=(300,300)))]]
     layout = [[sg.Column(logo_col, element_justification='c') , sg.Column(first_col, element_justification='c'),sg.VSeperator(color='#505050'), sg.VSeperator(color='#505050'),sg.Column(second_col, element_justification='c'),sg.VSeperator(color='#505050'),sg.Column(third_col, element_justification='c'),
                sg.VSeperator(color='#505050'),sg.Column(fourth_col, element_justification='c') , sg.VSeperator(color='#505050') , sg.Column(fifth_col, element_justification='c')]]

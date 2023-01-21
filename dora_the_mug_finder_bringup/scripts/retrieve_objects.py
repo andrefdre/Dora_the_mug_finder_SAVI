@@ -68,11 +68,14 @@ class ROSHandler:
         self.object_names = [name_string.data for name_string in data.classes]
 
     def callback_scene(self,data):
-        self.scene_name = data.data
-        scene_number = self.scene_name.split('_')
-        self.filename = self.files_path + f'/rgbd-scenes-v2/pc/{scene_number[-1]}.ply'
-        os.system('pcl_ply2pcd ' + self.filename + ' pcd_point_cloud.pcd')
-        self.point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
+        if data.data=='kinect':
+            self.scene_name = data.data
+        else:
+            self.scene_name = data.data
+            scene_number = self.scene_name.split('_')
+            self.filename = self.files_path + f'/rgbd-scenes-v2/pc/{scene_number[-1]}.ply'
+            os.system('pcl_ply2pcd ' + self.filename + ' pcd_point_cloud.pcd')
+            self.point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
 
 
 
@@ -123,14 +126,7 @@ def main():
 
     ###########################################
     # Object detection Initialization         #
-    ###########################################
-    
-    # Scene dataset paths
-    filenames = []
-    filenames.append (files_path + '/rgbd-scenes-v2/pc/01.ply')
-
-    file_idx = 0
-    
+    ###########################################    
     scenes_number_objects = {
         '01': 5,
         '02': 5,
@@ -145,7 +141,8 @@ def main():
         '11': 3,
         '12': 3,
         '13': 4,
-        '14': 4
+        '14': 4,
+        'kinect' : 0
     }
 
     vis = o3d.visualization.VisualizerWithKeyCallback()
