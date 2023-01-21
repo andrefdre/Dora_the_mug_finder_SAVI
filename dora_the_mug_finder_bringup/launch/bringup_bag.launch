@@ -12,8 +12,8 @@
     <param name="/use_sim_time" value="false"/>
     
     <!-- Read bagfile in loop -->
-    <arg name="bag_file_name" value="kinect"/>
-    <node pkg="rosbag" type="play" name="rosbag_play" output="screen" args="--clock -l $(find dora_the_mug_finder_bringup)/bag/$(arg bag_file_name).bag"/>
+    <arg name="bag_file_name" value="kinect_table"/>
+    <node pkg="rosbag" type="play" name="rosbag_play" output="screen" args="--clock -l $(env DORA)/rosbag/$(arg bag_file_name).bag"/>
     
     <!-- Launch convertor file -->
     <node pkg="dora_the_mug_finder_bringup" name="ros_to_open3d" type="kinect2pcl.py" output="screen"/>

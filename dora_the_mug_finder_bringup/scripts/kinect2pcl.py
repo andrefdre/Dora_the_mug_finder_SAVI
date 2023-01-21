@@ -21,37 +21,12 @@ def main():
     # ---------------------------------
     # Initialization 
     # ---------------------------------
-
-    # Predefined view parameters
-    view = {
-            "class_name" : "ViewTrajectory",
-            "interval" : 29,
-            "is_loop" : False,
-            "trajectory" :
-            [
-                {
-                    "boundingbox_max" : [ 0.90000000000000002, 0.90000000000000002, 0.5 ],
-                    "boundingbox_min" : [ -0.90000000000000002, -0.90000000000000002, -0.10000000000000003 ],
-                    "field_of_view" : 60.0,
-                    "front" : [ 0.57428340315845261, 0.72415504342386261, 0.38183510307530683 ],
-                    "lookat" : [ -0.23064077816298553, -0.2045093977126011, 0.17408966530741635 ],
-                    "up" : [ -0.36479928025136604, -0.19118507801017759, 0.91124626258455921 ],
-                    "zoom" : 0.79999999999999893
-                }
-            ],
-            "version_major" : 1,
-            "version_minor" : 0
-            }
-
     # Functions to convert RGB values from uint32 or float to tuple
     convert_rgbUint32_to_tuple = lambda rgb_uint32: ((rgb_uint32 & 0x00ff0000)>>16, (rgb_uint32 & 0x0000ff00)>>8, (rgb_uint32 & 0x000000ff))
     convert_rgbFloat_to_tuple = lambda rgb_float: convert_rgbUint32_to_tuple(int(cast(pointer(c_float(rgb_float)), POINTER(c_uint32)).contents.value))
 
-    # Message instantiation
-    kinect = Kinect_ply()
-
     # Class instantiation
-    cloud = Cloud(view, kinect, convert_rgbFloat_to_tuple, convert_rgbUint32_to_tuple)
+    cloud = Cloud(convert_rgbFloat_to_tuple, convert_rgbUint32_to_tuple)
 
     # Initialization of a ROS node
     rospy.init_node("ros_to_open3d")
@@ -64,7 +39,7 @@ def main():
     rate = rospy.Rate(10)
 
     while not rospy.is_shutdown():
-        print(Style.DIM, Fore.LIGHTBLACK_EX, "Receiving PointCloud from RGBD camera for conversion process", Style.RESET_ALL)
+        #print(Style.DIM, Fore.LIGHTBLACK_EX, "Receiving PointCloud from RGBD camera for conversion process", Style.RESET_ALL)
         rate.sleep()
 
     # ---------------------------------
@@ -73,12 +48,10 @@ def main():
 
 class Cloud:
     
-    def __init__(self, view, kinect, convert_rgbFloat_to_tuple, convert_rgbUint32_to_tuple):
+    def __init__(self, convert_rgbFloat_to_tuple, convert_rgbUint32_to_tuple):
 
         # Create the publisher 
         self.pub = rospy.Publisher("open3d_cloud", Kinect_ply, queue_size=10)
-        self.view = view
-        self.kinect = kinect
         self.convert_rgbFloat_to_tuple = convert_rgbFloat_to_tuple
         self.convert_rgbUint32_to_tuple = convert_rgbUint32_to_tuple
 
@@ -122,21 +95,22 @@ class Cloud:
             xyz = [(x,y,z) for x,y,z in cloud_data ] # get xyz
             open3d_cloud.points = o3d.utility.Vector3dVector(np.array(xyz))
 
+        kinect = Kinect_ply()
         # Append point to the correct message field
         for pt in open3d_cloud.points:
             pt = Point(pt[0], pt[1], pt[2]) 
-            self.kinect.point.append(pt)
+            kinect.point.append(pt)
 
         # Append color to the correct message field
         for clr in open3d_cloud.colors:
             clr = Point(clr[0], clr[1], clr[2])
-            self.kinect.rgb.append(clr)
+            kinect.rgb.append(clr)
 
     # ---------------------------------
     # Termination
     # ---------------------------------
 
-        self.pub.publish(self.kinect)
+        self.pub.publish(kinect)
 
         print(Style.BRIGHT, Fore.GREEN, 'Everything is okay, I am just sending the converted point cloud for processing', Style.RESET_ALL)
 
