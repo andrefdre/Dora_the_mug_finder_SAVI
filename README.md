@@ -140,14 +140,21 @@ rosrun dora_the_mug_finder_bringup model_train.py -fn <folder_name> -mn <model_n
 
 Where the <folder_name> and <model_name> should be replaced by a name for the model. 
 
+If instead of using point clouds from the dataset want to use point clouds acquired from a Kinect stored in a rosbag run, before running the detector:
+```
+roslaunch dora_the_mug_finder_bringup bringup_bag.launch 
+```
+
 To run the detector with previous trained model run the code:
 ```
 roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name>
 ```
+
 If you want to visualize extracted images run:
 ```
 roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> visualize:=True
 ```
+Where the <folder_name> and <model_name> should be replaced by a name for the model previously set while training. 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
