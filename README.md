@@ -109,7 +109,7 @@ This project was developed for Advanced Vision Systems class for the second repo
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This project uses ROS to use the kinect camera and is the CNN is built based on pytorch.
+This project uses ROS to aid the use of the kinect camera and the object classification CNN is built based on pytorch. To do object detection we use open3D.
 
 ### Prerequisites
 
@@ -117,14 +117,32 @@ To use this code first add the next line in the bashrc:
 
   ```
 #Dora The Mug FInder
-export DORA=/media/andre/Andre/dora_the_mug_finder
-export PYTHONPATH="$PYTHONPATH:/home/andre/catkin_ws/src/Dora_the_mug_finder_SAVI"
+export DORA=/home/andre/dora_the_mug_finder
+export PYTHONPATH="$PYTHONPATH:${HOME}/catkin_ws/src/Dora_the_mug_finder_SAVI"
   ```
+Replace the path of DORA to where all the datasets are store in your computer.
+Afterward compile the bashrc using:
+```
+source ~/.bashrc
+```
+
+Inside DORA folder should be a structure similar to:
+  - models
+  - rgbd-dataset
+  - rgbd-scenes-v2
+    - pc
+    - imgs
+  - rosbag
+
+
 
 ### Installation
-
-
-
+To install this package clone the repository inside the src folder of your catkinws running the code:
+```
+git clone https://github.com/andrefdre/Dora_the_mug_finder_SAVI.git
+cd ..
+catkin_make
+```
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
