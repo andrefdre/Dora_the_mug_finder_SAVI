@@ -71,9 +71,8 @@ class Table():
     def cluster(self,plane,eps=0.035, min_points=60, print_progress=False):
         self.cluster_idxs = list(plane.cluster_dbscan(eps=eps, min_points=min_points, print_progress=print_progress))
         self.object_idxs = list(set(self.cluster_idxs))
-        self.object_idxs.remove(-1) #Removes -1 cluster ID (-1 are the points not clustered)
-
-        #return cluster_idxs, object_idxs
+        if self.object_idxs[:] == -1:
+                self.object_idxs.remove(-1) #Removes -1 cluster ID (-1 are the points not clustered)
 
     def table(self,cluster_idxs, object_idxs,plane):
         self.table = []

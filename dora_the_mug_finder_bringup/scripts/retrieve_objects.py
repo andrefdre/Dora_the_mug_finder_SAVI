@@ -20,7 +20,6 @@ import argparse
 import sys
 import os
 import rospy
-import glob
 from std_msgs.msg import String
 from sensor_msgs.msg import PointCloud2
 import sensor_msgs.point_cloud2 as pc2
@@ -28,7 +27,7 @@ from ctypes import * # To convert float to uint32
 
 
 # Oun Package imports
-from dora_the_mug_finder_msg.msg import Object , Point , Classes , Kinect_ply
+from dora_the_mug_finder_msg.msg import Object , Point , Classes
 from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Transform
 from dora_the_mug_finder_bringup.src.utils import text_3d
 
@@ -70,6 +69,23 @@ class ROSHandler:
         convert_rgbFloat_to_tuple = lambda rgb_float: convert_rgbUint32_to_tuple(int(cast(pointer(c_float(rgb_float)), POINTER(c_uint32)).contents.value))
         self.convert_rgbFloat_to_tuple = convert_rgbFloat_to_tuple
         self.convert_rgbUint32_to_tuple = convert_rgbUint32_to_tuple
+        self.scenes_number_objects = {
+                '01': 5,
+                '02': 5,
+                '03': 5,
+                '04': 5,
+                '05': 4,
+                '06': 5,
+                '07': 5,
+                '08': 4,
+                '09': 3,
+                '10': 3,
+                '11': 3,
+                '12': 3,
+                '13': 4,
+                '14': 4,
+        }
+        self.scene_number_objects = 5
                             
 
     def callback_class(self,data):
@@ -119,6 +135,7 @@ class ROSHandler:
             self.scene_name = data.data
             self.point_cloud_original = self.kinect_cloud
             self.eps = 0.07
+            self.scene_number_objects = 'kinect'
         else:
             self.scene_name = data.data
             scene_number = self.scene_name.split('_')
@@ -126,6 +143,11 @@ class ROSHandler:
             os.system('pcl_ply2pcd ' + self.filename + ' pcd_point_cloud.pcd')
             self.point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
             self.eps = 0.025
+            parts = self.filename.split('/')
+            part = parts[-1]
+            parts = part.split('.')
+            scene_number = parts[0]
+            self.scene_number_objects = self.scenes_number_objects[scene_number]
 
 
 
@@ -175,27 +197,6 @@ def main():
     rospy.init_node('objects', anonymous=False)
     rate = rospy.Rate(10) # 10hz
 
-    ###########################################
-    # Object detection Initialization         #
-    ###########################################
-    scenes_number_objects = {
-        '01': 5,
-        '02': 5,
-        '03': 5,
-        '04': 5,
-        '05': 4,
-        '06': 5,
-        '07': 5,
-        '08': 4,
-        '09': 3,
-        '10': 3,
-        '11': 3,
-        '12': 3,
-        '13': 4,
-        '14': 4,
-        'kinect' : 'kinect'
-    }
-
     ############################################
     # Visualizer Initialization                #
     ############################################
@@ -220,16 +221,11 @@ def main():
             ####################################
             # Initialization of loop           #
             ####################################
-            parts = ros_handler.filename.split('/')
-            part = parts[-1]
-            parts = part.split('.')
-            scene_number = parts[0]
-            scene_number_objects = scenes_number_objects[scene_number]
-
             # Creates copy of the information coming from ros to prevent changing during middle of the code
             point_cloud_original = deepcopy(ros_handler.point_cloud_original)  
             scene_name = ros_handler.scene_name
             eps=ros_handler.eps
+            scene_number_objects = ros_handler.scene_number_objects
             ########################################
             # Find two planes                      #
             ########################################
@@ -290,14 +286,15 @@ def main():
             # objects
             cluster_idxs = list(point_cloud_objects_noise.cluster_dbscan(eps=eps, min_points=100, print_progress=False))
             object_idxs = list(set(cluster_idxs))
-            if len(object_idxs)>1:
+            if object_idxs[:] == -1:
                 object_idxs.remove(-1) #Removes -1 cluster ID (-1 are the points not clustered)
 
             objects = []    #Create the objects list
             threshold_z = 0
             threshold_dist = 0.7
-            threshold_width = 0.7
-            threshold_length = 0.7
+            threshold_width = 0.35
+            threshold_length = 0.35
+            threshold_height = 0.35
             #Here we find the points for each object and reunite them 
             for object_idx in object_idxs:
 
@@ -322,8 +319,9 @@ def main():
                 d['bbox_obj'] = d['points'].get_axis_aligned_bounding_box()
                 d['bbox_to_draw'] = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(d['bbox_obj'])
 
-                if d['z'] > threshold_z and dist < threshold_dist and d['width'] < threshold_width and d['length'] < threshold_length:       
+                if d['z'] > threshold_z and dist < threshold_dist and d['width'] < threshold_width and d['length'] < threshold_length and d['height'] < threshold_height:       
                     # condition of being object: Z center > 0, be close to the reference, not be too big
+                    print(d['length'],d['width'],d['height'])
                     objects.append(d) #Add the dict of this object to the list
 
 
@@ -389,6 +387,7 @@ def main():
             for entity in entities:
                 vis.add_geometry(entity,reset_bounding_box=False)
 
+        print(f'{Fore.GREEN}Finished processing point cloud.{Style.RESET_ALL}')
         visualizer.visualize()
 
 

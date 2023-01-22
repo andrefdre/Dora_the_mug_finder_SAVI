@@ -6,18 +6,14 @@
 # SAVI, January 2023.
 # --------------------------------------------------
 
-import math
-from more_itertools import locate
-from math import floor, sqrt
-from copy import deepcopy
-import open3d as o3d
+from colorama import Fore, Style
 import numpy as np
 import glob
 import os
 import cv2
 import matplotlib.pyplot as plt
 from sensor_msgs.msg import Image
-from cv_bridge import CvBridge, CvBridgeError
+from cv_bridge import CvBridge
 import argparse
 import sys
 import yaml
@@ -47,10 +43,9 @@ class ROSHandler:
         if data.scene.data == 'kinect':
             # Camera parameters
             with open(f'{files_path}/rosbag/intrinsic.yaml', "r") as yamlfile:
-                data = yaml.load(yamlfile, Loader=yaml.FullLoader)
-            print(data)
-            center = [data['camera_matrix']['data'][2] , data['camera_matrix']['data'][5]]
-            focal_length = data['camera_matrix']['data'][0]
+                camera_data = yaml.load(yamlfile, Loader=yaml.FullLoader)
+            center = [camera_data['camera_matrix']['data'][2] , camera_data['camera_matrix']['data'][5]]
+            focal_length = camera_data['camera_matrix']['data'][0]
 
             camera_matrix = np.array([[focal_length, 0,            center[0]],
                                     [0,            focal_length, center[1]],
@@ -97,7 +92,9 @@ class ROSHandler:
                     #image[point_2d[0][1]-2:point_2d[0][1]+2,point_2d[0][0]-2:point_2d[0][0]+2]=color
                     #image = cv2.rectangle(image, bbox_2d[idx][0][0], bbox_2d[idx][1][0], color, thickness)
                     cropped_image = image[bbox_2d[idx][1][0][1]:bbox_2d[idx][0][0][1],bbox_2d[idx][0][0][0]:bbox_2d[idx][1][0][0]]
-                    height ,width , _ = cropped_image.shape
+                    if cropped_image.shape[0] == 0 or cropped_image.shape[1] == 0:
+                        print(f'{Fore.RED}Skipping Image due to inappropriate width/height. {Style.RESET_ALL}')
+                        continue 
                     self.cropped_images.images.append(self.bridge.cv2_to_imgmsg(cropped_image, "passthrough"))
         else:
             for filename in filenames:
@@ -108,7 +105,10 @@ class ROSHandler:
                     #image[point_2d[0][1]-2:point_2d[0][1]+2,point_2d[0][0]-2:point_2d[0][0]+2]=color
                     #image = cv2.rectangle(image, bbox_2d[idx][0][0], bbox_2d[idx][1][0], color, thickness)
                     cropped_image = image[bbox_2d[idx][1][0][1]:bbox_2d[idx][0][0][1],bbox_2d[idx][0][0][0]:bbox_2d[idx][1][0][0]]
-                    height ,width , _ = cropped_image.shape
+
+                    if cropped_image.shape[0] == 0 or cropped_image.shape[1] == 0:
+                        print(f'{Fore.RED}Skipping Image due to inappropriate width/height. {Style.RESET_ALL}')
+                        continue 
                     self.cropped_images.images.append(self.bridge.cv2_to_imgmsg(cropped_image, "passthrough"))
 
         self.pub.publish(self.cropped_images)
@@ -118,6 +118,7 @@ class ROSHandler:
         for image_idx,cropped_image in enumerate(self.cropped_images.images,start=1):
             ax = self.figure.add_subplot(2,5,image_idx) # define a 5 x 5 subplot matrix
             cv_image = self.bridge.imgmsg_to_cv2(cropped_image, desired_encoding='passthrough')
+
             plt.imshow(cv_image)
             ax.xaxis.set_ticklabels([])
             ax.yaxis.set_ticklabels([])
