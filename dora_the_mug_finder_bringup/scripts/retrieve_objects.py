@@ -321,7 +321,6 @@ def main():
 
                 if d['z'] > threshold_z and dist < threshold_dist and d['width'] < threshold_width and d['length'] < threshold_length and d['height'] < threshold_height:       
                     # condition of being object: Z center > 0, be close to the reference, not be too big
-                    print(d['length'],d['width'],d['height'])
                     objects.append(d) #Add the dict of this object to the list
 
 

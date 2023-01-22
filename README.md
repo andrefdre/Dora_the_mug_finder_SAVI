@@ -139,6 +139,15 @@ rosrun dora_the_mug_finder_bringup model_train.py -fn <folder_name> -mn <model_n
 ```
 
 Where the <folder_name> and <model_name> should be replaced by a name for the model. 
+
+To run the detector with previous trained model run the code:
+```
+roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name>
+```
+If you want to visualize extracted images run:
+```
+roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> visualize:=True
+```
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
