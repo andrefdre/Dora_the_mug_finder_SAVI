@@ -112,7 +112,7 @@ def main():
     if args['kinect']==False:    
         # Scene dataset paths
         filenames = []
-        filenames.append (files_path + '/rgbd-scenes-v2/pc/02.ply')
+        filenames.append (files_path + '/rgbd-scenes-v2/pc/05.ply')
         #filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
         file_idx = 0
         
