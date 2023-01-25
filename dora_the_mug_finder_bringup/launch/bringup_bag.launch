@@ -1,5 +1,8 @@
 <launch>    
-    
+    <arg name="visualize" doc="Visualize extracted images" default="False"/>         
+    <arg name="mn" doc="Model name" default='test_1'/>
+    <arg name="fn" doc="Folder name" default='models'/>    
+
     <!-- Launch openni and defines the name as camera-->    
     <arg name="frame_id" default="camera"/>
 
@@ -15,6 +18,26 @@
     <arg name="bag_file_name" value="kinect_complete"/>
     <node pkg="rosbag" type="play" name="rosbag_play" args="--clock -l $(env DORA)/rosbag/$(arg bag_file_name).bag"/>
     
+
+     <!-- User interface -->
+    <node pkg="dora_the_mug_finder_bringup" name="user_interface" type="user_interface.py" output="screen"/>
+
+    <!-- Object extraction -->
+    <node pkg="dora_the_mug_finder_bringup" name="retieve_objects" type="retrieve_objects.py" output="screen" args="-v"/>
+
+    <!-- Image extraction -->
+    <group unless="$(arg visualize)">
+        <node pkg="dora_the_mug_finder_bringup" name="image_extractor" type="image_extractor.py" output="screen"/>
+    </group>
+
+    <group if="$(arg visualize)">
+        <node pkg="dora_the_mug_finder_bringup" name="image_extractor" type="image_extractor.py" output="screen"
+        args="-v"/>
+    </group>
+
+    <!-- Object Classification -->
+    <node pkg="dora_the_mug_finder_bringup" name="classification" type="classification.py" output="screen"
+    args="-fn $(arg fn) -mn $(arg mn)"/>
     <!-- Launch rviz with correct configuration file -->
 
 <!--    <node name="rviz" pkg="rviz" type="rviz" args="--><!--display-config $(find dora_the_mug_finder_bringup)/config/kinect.rviz" required="false"/> -->

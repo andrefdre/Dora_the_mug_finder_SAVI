@@ -145,8 +145,17 @@ catkin_make
 ```
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+### Dependencies
 
+- colorama
+- numpy
+- cv2
+- matplotlib
+- argparse
+- gTTS
+- pyglet
 
+Google TextToSpeech can be installed using the command `pip install gTTS`. To install pyglet use `pip install pyglet`
 <!-- USAGE EXAMPLES -->
 ## Usage
 
