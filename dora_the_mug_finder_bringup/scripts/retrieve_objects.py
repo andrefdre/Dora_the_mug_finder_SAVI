@@ -315,7 +315,6 @@ def main():
                 d['length'] = abs(abs(bbox_max[0])-abs(bbox_min[0])) #axis x
                 d['width'] = abs(abs(bbox_max[1])-abs(bbox_min[1])) #axis y
                 d['height'] = abs(abs(bbox_max[2])-abs(bbox_min[2])) #axis z
-
                 d['bbox_obj'] = d['points'].get_axis_aligned_bounding_box()
                 d['bbox_to_draw'] = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(d['bbox_obj'])
 
@@ -346,6 +345,11 @@ def main():
                 center = object['points'].get_center()
                 objects_3d.center.append(Point(center[0],center[1],center[2]))
                 objects_3d.scene = String(scene_name)
+
+                # Appends each object's properties to the message
+                objects_3d.height.append(object['height'])
+                objects_3d.width.append(object['width'])
+                objects_3d.length.append(object['length'])
 
                 # Creates the entities to be drawn
                 sphere =o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
