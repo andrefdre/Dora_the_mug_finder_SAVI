@@ -197,52 +197,10 @@ def main():
     rospy.init_node('objects', anonymous=False)
     rate = rospy.Rate(10) # 10hz
 
-    ###########################################
-    # Object detection Initialization         #
-    ###########################################
-    
-    files_path=f'{os.environ["DORA"]}'
-    
-    if args['kinect']==False:    
-        # Scene dataset paths
-        filenames = []
-        filenames.append (files_path + '/rgbd-scenes-v2/pc/05.ply')
-        #filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
-        file_idx = 0
-        
-        scenes_number_objects = {
-            '01': 5,
-            '02': 5,
-            '03': 5,
-            '04': 5,
-            '05': 4,
-            '06': 5,
-            '07': 5,
-            '08': 4,
-            '09': 3,
-            '10': 3,
-            '11': 3,
-            '12': 3,
-            '13': 4,
-            '14': 4
-        }
 
-        os.system('pcl_ply2pcd ' + filenames[file_idx] + ' pcd_point_cloud.pcd')
-        point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
-        
-        ########################################
-        # Cluster_dbscan parameters            #
-        ########################################
-        eps = 0.025
-    else:
-        filename = (files_path + '/rgbd-scenes-v2/bag_scenes/kinect_all_points.ply')
-        point_cloud_original = o3d.io.read_point_cloud(filename)
-        
-        ########################################
-        # Cluster_dbscan parameters            #
-        ########################################
-        eps = 0.07
-
+    ############################################
+    # Visualizer Initialization                #
+    ############################################
 
     vis = o3d.visualization.VisualizerWithKeyCallback()
     visualizer = Visualize(vis)
@@ -330,15 +288,16 @@ def main():
             # objects
             cluster_idxs = list(point_cloud_objects_noise.cluster_dbscan(eps=eps, min_points=100, print_progress=False))
             object_idxs = list(set(cluster_idxs))
-            if object_idxs[:] == -1:
+            
+            if -1 in object_idxs:
                 object_idxs.remove(-1) #Removes -1 cluster ID (-1 are the points not clustered)
-
+            
             objects = []    #Create the objects list
             threshold_z = 0
             threshold_dist = 0.7
             threshold_width = 0.35
             threshold_length = 0.35
-            threshold_height = 0.35
+            threshold_height = 0.4
             #Here we find the points for each object and reunite them 
             for object_idx in object_idxs:
 
@@ -366,7 +325,7 @@ def main():
                 if d['z'] > threshold_z and dist < threshold_dist and d['width'] < threshold_width and d['length'] < threshold_length and d['height'] < threshold_height:       
                     # condition of being object: Z center > 0, be close to the reference, not be too big
                     objects.append(d) #Add the dict of this object to the list
-
+                #print(objects)
 
             #####################################
             # BBox extraction                   #
