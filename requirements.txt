@@ -2,3 +2,4 @@ more-itertools
 open3d
 numpy
 opencv-python
+pyglet

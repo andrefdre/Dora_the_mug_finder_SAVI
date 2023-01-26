@@ -20,7 +20,7 @@ import argparse
 import sys
 import os
 import rospy
-from std_msgs.msg import String
+from std_msgs.msg import String , Float64
 from sensor_msgs.msg import PointCloud2
 import sensor_msgs.point_cloud2 as pc2
 from ctypes import * # To convert float to uint32
@@ -347,9 +347,9 @@ def main():
                 objects_3d.scene = String(scene_name)
 
                 # Appends each object's properties to the message
-                objects_3d.height.append(object['height'])
-                objects_3d.width.append(object['width'])
-                objects_3d.length.append(object['length'])
+                objects_3d.height.append(Float64(object['height']))
+                objects_3d.width.append(Float64(object['width']))
+                objects_3d.length.append(Float64(object['length']))
 
                 # Creates the entities to be drawn
                 sphere =o3d.geometry.TriangleMesh.create_sphere(radius=0.01)

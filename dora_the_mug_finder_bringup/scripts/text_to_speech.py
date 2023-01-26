@@ -8,36 +8,34 @@ from time import sleep
 from dora_the_mug_finder_msg.msg import Object
 
 
-def msgReceivedCallback():
+def msgReceivedCallback(data):
 
     # Get properties lists from the message
-    length = Object['length']
-    height = Object['height']
-    width = Object['width']
-    color = Object['color']
-    scene = Object['scene']
-    
-    #! Test, if none we try the gtts either way
-    if Object is None:
-            length = 12
-            height = 0.5
-            width = 3.2
-            scene = 'scene_01'
+    lengths = data.length
+    heights = data.height
+    widths = data.width
+    colors = data.color
+    scene = data.scene.data
+
+    scene_parts = scene.split('_')
+    scene_name =scene_parts[0]
+    scene_number = scene_parts[-1]
+
+    # Initial text
+    text = 'The ' + str(scene_name) + str(scene_number) +  ' has ' + str(len(lengths)) + ' objects.'
             
     # Description of each object
-    for object_idx in length:
+    for object_idx , length in enumerate(lengths):
+        print(object_idx)
 
-        object_idx_length = length[object_idx]
-        object_idx_width = width[object_idx]
-        object_idx_height = height[object_idx]
-        object_idx_color = color[object_idx]
-
-        # Initial text
-        text = 'The ' + str(scene) +  ' has ' + str(len(length)) + ' objects.'
+        object_idx_length = lengths[object_idx].data
+        object_idx_width = widths[object_idx].data
+        object_idx_height = heights[object_idx].data
+        #object_idx_color = colors[object_idx].data
     
         text = text + 'Object number ' + str(object_idx+1) + ' has dimensions of ' + str(object_idx_length) + ' per ' + str(object_idx_width) + ' per ' + str(object_idx_height)
 
-        if color is None:
+        if len(colors)== 0:
             text = text + '. There is not information about the color.'
 
         else: 
