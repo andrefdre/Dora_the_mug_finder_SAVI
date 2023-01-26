@@ -55,12 +55,12 @@ class Model(nn.Module):
         out = self.layer2(out)
         # print('layer 2 out = ' + str(out.shape))
 
-        out = self.dropout_01(out)
+        #out = self.dropout_01(out)
 
         out = self.layer3(out)
         # print('layer 3 out = ' + str(out.shape))
 
-        out = self.dropout_02(out)
+        #out = self.dropout_02(out)
 
         out = out.view(out.size(0),-1) # flatten to keep batch dimension and compact all others into the second dimension
         # print('out after view = ' + str(out.shape))
@@ -68,10 +68,10 @@ class Model(nn.Module):
         out = self.relu(self.fc1(out))
         # print('fc1 out = ' + str(out.shape))
 
-        out = out.view(out.size(0),-1) # flatten to keep batch dimension and compact all others into the second dimension
+        #out = out.view(out.size(0),-1) # flatten to keep batch dimension and compact all others into the second dimension
         # print('out after view = ' + str(out.shape))
 
-        out = self.dropout_03(out)
+        #out = self.dropout_03(out)
 
         out = self.soft_max(self.fc2(out))
         # print('fc2 out = ' + str(out.shape))
