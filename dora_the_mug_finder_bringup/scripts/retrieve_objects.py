@@ -197,9 +197,53 @@ def main():
     rospy.init_node('objects', anonymous=False)
     rate = rospy.Rate(10) # 10hz
 
-    ############################################
-    # Visualizer Initialization                #
-    ############################################
+    ###########################################
+    # Object detection Initialization         #
+    ###########################################
+    
+    files_path=f'{os.environ["DORA"]}'
+    
+    if args['kinect']==False:    
+        # Scene dataset paths
+        filenames = []
+        filenames.append (files_path + '/rgbd-scenes-v2/pc/05.ply')
+        #filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
+        file_idx = 0
+        
+        scenes_number_objects = {
+            '01': 5,
+            '02': 5,
+            '03': 5,
+            '04': 5,
+            '05': 4,
+            '06': 5,
+            '07': 5,
+            '08': 4,
+            '09': 3,
+            '10': 3,
+            '11': 3,
+            '12': 3,
+            '13': 4,
+            '14': 4
+        }
+
+        os.system('pcl_ply2pcd ' + filenames[file_idx] + ' pcd_point_cloud.pcd')
+        point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
+        
+        ########################################
+        # Cluster_dbscan parameters            #
+        ########################################
+        eps = 0.025
+    else:
+        filename = (files_path + '/rgbd-scenes-v2/bag_scenes/kinect_all_points.ply')
+        point_cloud_original = o3d.io.read_point_cloud(filename)
+        
+        ########################################
+        # Cluster_dbscan parameters            #
+        ########################################
+        eps = 0.07
+
+
     vis = o3d.visualization.VisualizerWithKeyCallback()
     visualizer = Visualize(vis)
     vis.register_key_callback(32, visualizer.space_callback)

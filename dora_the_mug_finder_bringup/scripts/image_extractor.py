@@ -37,11 +37,9 @@ class ROSHandler:
 
     def callback(self,data):
         files_path=f'{os.environ["DORA"]}'
-        
-        # Pose dataset paths
-        filename_pose = (files_path + '/rgbd-scenes-v2/pc/05.pose')
-        
-        # Scene dataset paths
+
+
+        # Scene images
         filenames = []
         if data.scene.data == 'kinect':
             # Camera parameters
@@ -70,36 +68,51 @@ class ROSHandler:
         points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
         bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
         
-        # ????????????????????????????????????????????????????????????????
-    
-        self.get_matrix_inv(filename_pose)
+          # Pose dataset paths
+          filename_pose = (files_path + '/rgbd-scenes-v2/pc/05.pose')
 
-        for idx, p in enumerate(points):
-            point = np.ones((1,4))
-            point[:,0:3] = points[idx]
-            point = np.transpose(point)
-            point = np.dot(self.matrix_inv,point)
-            points[idx,:]=np.transpose(point[0:3,:]) 
+          # Scene dataset paths
+          filenames = []
+          filenames.append (files_path + '/rgbd-scenes-v2/imgs/scene_05/00147-color.png')
 
-        for idx, p in enumerate(bbox_3d): 
-            for n in range(0,2):
-                bbox = np.ones((1,4))
-                bbox[:,0:3] = bbox_3d[idx][n]
-                bbox = np.transpose(bbox)
-                bbox = np.dot(self.matrix_inv,bbox)
-                bbox_3d[idx][n]=np.transpose(bbox[0:3,:]) 
-    
-        # ????????????????????????????????????????????????????????????????   
+          points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
+          bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
 
-        # Camera parameters
-        center = [320 , 240]
-        focal_length = 570.3
-        MM_PER_M = 1000
+          # ????????????????????????????????????????????????????????????????
 
-        camera_matrix = np.array([[focal_length, 0,            center[0]],
-                                [0,            focal_length, center[1]],
-                                [0,            0,            1]])
+          self.get_matrix_inv(filename_pose)
 
+          for idx, p in enumerate(points):
+              point = np.ones((1,4))
+              point[:,0:3] = points[idx]
+              point = np.transpose(point)
+              point = np.dot(self.matrix_inv,point)
+              points[idx,:]=np.transpose(point[0:3,:]) 
+
+          for idx, p in enumerate(bbox_3d): 
+              for n in range(0,2):
+                  bbox = np.ones((1,4))
+                  bbox[:,0:3] = bbox_3d[idx][n]
+                  bbox = np.transpose(bbox)
+                  bbox = np.dot(self.matrix_inv,bbox)
+                  bbox_3d[idx][n]=np.transpose(bbox[0:3,:]) 
+
+          # ????????????????????????????????????????????????????????????????   
+
+            # Camera parameters
+            center = [320 , 240]
+            focal_length = 570.3
+
+
+            camera_matrix = np.array([[focal_length, 0,            center[0]],
+                                    [0,            focal_length, center[1]],
+                                    [0,            0,            1]])
+
+
+
+        points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
+        bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
+        
         # Project the 3D points to the 2D image plane
         points_2d = cv2.projectPoints(points, np.identity(3), np.zeros(3), camera_matrix, None,)[0]
         # print('points_2d: \n',points_2d)
