@@ -13,6 +13,7 @@ from PIL import Image
 from cv_bridge import CvBridge, CvBridgeError
 import rospy
 from std_msgs.msg import String
+from colorama import Fore, Style
 
 # Own package imports
 from dora_the_mug_finder_msg.msg import Object , Images , Classes
@@ -21,7 +22,6 @@ from dora_the_mug_finder_bringup.src.utils import LoadModel,GetClassListFromFold
 
 
 class ImageClassifier:
-
     def __init__(self,model,device):
         self.model = model
         self.device = device
@@ -30,7 +30,7 @@ class ImageClassifier:
         self.bridge = CvBridge()
         self.class_list= GetClassListFromFolder()
         self.PIL_to_Tensor = transforms.Compose([
-                            transforms.Resize((224,224)),
+                            transforms.Resize((64,64)),
                             transforms.ToTensor()
                             ])
 
@@ -39,7 +39,6 @@ class ImageClassifier:
         self.figure.figure.set_size_inches(10,4)
         plt.legend(loc='best')
         plt.clf()
-        pub = rospy.Publisher('objects_publisher', Object, queue_size=10)
         self.update_graph = False
                             
 
@@ -68,7 +67,10 @@ class ImageClassifier:
         self.pub.publish(self.classification)
         self.update_graph = True
 
-        print(self.classification)
+
+        text_print = [classification.data for classification in self.classification.classes]
+
+        print( text_print )
         
 
     def draw(self):

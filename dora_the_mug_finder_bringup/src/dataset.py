@@ -6,7 +6,7 @@ from PIL import Image
 from torchvision import transforms
 import glob
 import os
-from utils import GetClassListFromFolder
+from dora_the_mug_finder_bringup.src.utils import GetClassListFromFolder
 
 class Dataset(torch.utils.data.Dataset):
     def __init__(self,image_filenames):
@@ -31,13 +31,15 @@ class Dataset(torch.utils.data.Dataset):
 
         # Create a set of transformations
         self.transforms = transforms.Compose([
-            transforms.Resize((224,224)),
+            transforms.Resize((64,64)),
             transforms.ToTensor()
         ])
-       
+    
+    # Function that will get the class from the file structure
     def getClassFromFilename(self, filename):
         parts = filename.split('/')
-        part = parts[6]
+        # Get the third item counting from the end
+        part = parts[len(parts)-3]
         return part
 
 
