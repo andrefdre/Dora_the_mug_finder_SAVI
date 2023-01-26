@@ -33,7 +33,7 @@ def msgReceivedCallback(data):
         object_idx_height = heights[object_idx].data
         #object_idx_color = colors[object_idx].data
     
-        text = text + 'Object number ' + str(object_idx+1) + ' has dimensions of ' + str(object_idx_length) + ' per ' + str(object_idx_width) + ' per ' + str(object_idx_height)
+        text = text + 'Object number ' + str(object_idx+1) + ' has dimensions of ' + str(round(object_idx_length,2)) + ' per ' + str(round(object_idx_width,2)) + ' per ' + str(round(object_idx_height,2) + ' meters.')
 
         if len(colors)== 0:
             text = text + '. There is not information about the color.'
