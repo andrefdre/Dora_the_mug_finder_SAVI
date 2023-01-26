@@ -40,7 +40,7 @@ def main():
                         help='Batch size')
     parser.add_argument('-c', '--cuda', default=0, type=int,
                         help='Number of cuda device')
-    parser.add_argument('-loss', '--loss_threshold', default=0.00001, type=float,
+    parser.add_argument('-loss', '--loss_threshold', default=0.01, type=float,
                         help='Loss threshold criteria for when to stop')
     parser.add_argument('-lr', '--learning_rate', default=0.01, type=float,
                         help='Learning rate')
@@ -76,6 +76,7 @@ def main():
     maximum_num_epochs = args['max_epoch'] 
     termination_loss_threshold =  args['loss_threshold']
     loss_function = torch.nn.NLLLoss()
+    loss_function = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     ########################################
@@ -166,8 +167,9 @@ def main():
             label_t_predicted = model.forward(image_t)
  
             # Compute the error based on the predictions
-            m = torch.nn.LogSoftmax(dim=1)
-            loss = loss_function(m(label_t_predicted), label_t)
+            #m = torch.nn.LogSoftmax(dim=1)
+            #loss = loss_function(m(label_t_predicted), label_t)
+            loss = loss_function(label_t_predicted, label_t)
 
             # Update the model, i.e. the neural network's weights 
             optimizer.zero_grad() # resets the weights to make sure we are not accumulating
@@ -193,8 +195,10 @@ def main():
             label_t_predicted = model.forward(image_t)
 
             # Compute the error based on the predictions
-            m = torch.nn.LogSoftmax(dim=1)
-            loss = loss_function(m(label_t_predicted), label_t)
+            #m = torch.nn.LogSoftmax(dim=1)
+            #loss = loss_function(m(label_t_predicted), label_t)
+            loss = loss_function(label_t_predicted, label_t)
+            #print(label_t,label_t_predicted)
 
             test_losses.append(loss.data.item())
 
