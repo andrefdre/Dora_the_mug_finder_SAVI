@@ -17,7 +17,7 @@ from cv_bridge import CvBridge
 import argparse
 import sys
 import yaml
-
+from scipy.spatial.transform import Rotation as R
 
 import rospy
 from dora_the_mug_finder_msg.msg import Object , Images
@@ -38,6 +38,7 @@ class ROSHandler:
     def callback(self,data):
         files_path=f'{os.environ["DORA"]}'
 
+
         # Scene images
         filenames = []
         if data.scene.data == 'kinect':
@@ -54,14 +55,47 @@ class ROSHandler:
         else:
             # Scene dataset paths
             filenames.append (files_path + f'/rgbd-scenes-v2/imgs/{data.scene.data}/00000-color.png')
+        
+          # Pose dataset paths
+          filename_pose = (files_path + '/rgbd-scenes-v2/pc/05.pose')
+
+          # Scene dataset paths
+          filenames = []
+          filenames.append (files_path + '/rgbd-scenes-v2/imgs/scene_05/00147-color.png')
+
+          points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
+          bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
+
+          # ????????????????????????????????????????????????????????????????
+
+          self.get_matrix_inv(filename_pose)
+
+          for idx, p in enumerate(points):
+              point = np.ones((1,4))
+              point[:,0:3] = points[idx]
+              point = np.transpose(point)
+              point = np.dot(self.matrix_inv,point)
+              points[idx,:]=np.transpose(point[0:3,:]) 
+
+          for idx, p in enumerate(bbox_3d): 
+              for n in range(0,2):
+                  bbox = np.ones((1,4))
+                  bbox[:,0:3] = bbox_3d[idx][n]
+                  bbox = np.transpose(bbox)
+                  bbox = np.dot(self.matrix_inv,bbox)
+                  bbox_3d[idx][n]=np.transpose(bbox[0:3,:]) 
+
+          # ????????????????????????????????????????????????????????????????   
 
             # Camera parameters
             center = [320 , 240]
             focal_length = 570.3
 
+
             camera_matrix = np.array([[focal_length, 0,            center[0]],
                                     [0,            focal_length, center[1]],
                                     [0,            0,            1]])
+
 
 
         points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
@@ -69,6 +103,7 @@ class ROSHandler:
         
         # Project the 3D points to the 2D image plane
         points_2d = cv2.projectPoints(points, np.identity(3), np.zeros(3), camera_matrix, None,)[0]
+        # print('points_2d: \n',points_2d)
 
         bbox_2d = []
 
@@ -111,7 +146,49 @@ class ROSHandler:
                         continue 
                     self.cropped_images.images.append(self.bridge.cv2_to_imgmsg(cropped_image, "passthrough"))
 
+
         self.pub.publish(self.cropped_images)
+
+
+    def get_matrix_inv(self,filename):
+        
+        with open(filename, "r") as pose:
+            file_pose = pose.readlines()
+            vector_pose_str = file_pose[147]
+
+            vector_pose_array = vector_pose_str.split(' ')
+            
+            # rotation matrix
+            r = R.from_quat([vector_pose_array[1], vector_pose_array[2], vector_pose_array[3], vector_pose_array[0]])
+            self.rot_matrix = r.as_matrix()
+            
+            # translation matrix
+            self.trans_matrix = np.array([vector_pose_array[4], vector_pose_array[5], vector_pose_array[6]], dtype=np.float32)
+            # self.trans_matrix = np.vstack(trans_matrix)
+
+            # homogeneous transformation matrix (4,4) 
+            l = 4
+            self.matrix = np.zeros((l,l))
+            self.matrix[0:3,0:3] = self.rot_matrix
+            self.matrix[0:3,3] = self.trans_matrix
+            self.matrix[3,3] = 1
+
+            # inverse matrices
+            self.matrix_inv = np.linalg.inv(self.matrix)
+            self.rot_matrix_inv, self.trans_matrix_inv = np.hsplit(np.array(self.matrix_inv), [l-1])
+            self.rot_matrix_inv = self.rot_matrix_inv[0:3,:]
+            self.trans_matrix_inv = self.trans_matrix_inv[0:3,:]
+
+            # prints
+            # print('rot matrix: \n', self.rot_matrix)
+            # print("trans:\n", self.trans_matrix)
+            # print("matrix:\n", self.matrix)
+            
+            # print("matrix inv:\n", self.matrix_inv)
+            # print('rot inv: \n', self.rot_matrix_inv)
+            # print('trans inv:\n', self.trans_matrix_inv)
+
+          
 
     def draw(self):
         plt.clf()

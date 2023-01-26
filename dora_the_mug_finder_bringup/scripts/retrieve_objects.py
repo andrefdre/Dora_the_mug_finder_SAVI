@@ -197,9 +197,11 @@ def main():
     rospy.init_node('objects', anonymous=False)
     rate = rospy.Rate(10) # 10hz
 
+
     ############################################
     # Visualizer Initialization                #
     ############################################
+
     vis = o3d.visualization.VisualizerWithKeyCallback()
     visualizer = Visualize(vis)
     vis.register_key_callback(32, visualizer.space_callback)
