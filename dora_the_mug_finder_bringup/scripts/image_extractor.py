@@ -55,6 +55,9 @@ class ROSHandler:
         else:
             # Scene dataset paths
             filenames.append (files_path + f'/rgbd-scenes-v2/imgs/{data.scene.data}/00000-color.png')
+            # Pose dataset paths
+            scene_number = {data.scene.data}.split('_')
+            filename_pose = (files_path + '/rgbd-scenes-v2/pc/01.pose')
 
             # Camera parameters
             center = [320 , 240]
@@ -64,20 +67,9 @@ class ROSHandler:
                                     [0,            focal_length, center[1]],
                                     [0,            0,            1]])
 
-
         points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
         bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
         
-        # Pose dataset paths
-        filename_pose = (files_path + '/rgbd-scenes-v2/pc/05.pose')
-
-        # Scene dataset paths
-        filenames = []
-        filenames.append (files_path + '/rgbd-scenes-v2/imgs/scene_05/00147-color.png')
-
-        points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
-        bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
-
         # ????????????????????????????????????????????????????????????????
 
         self.get_matrix_inv(filename_pose)
@@ -149,7 +141,7 @@ class ROSHandler:
                 image = cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
 
                 for idx,point_2d in enumerate(points_2d):
-                    #image[point_2d[0][1]-2:point_2d[0][1]+2,point_2d[0][0]-2:point_2d[0][0]+2]=color
+                    image[point_2d[0][1]-5:point_2d[0][1]+5,point_2d[0][0]-5:point_2d[0][0]+5]=color
                     #image = cv2.rectangle(image, bbox_2d[idx][0][0], bbox_2d[idx][1][0], color, thickness)
                     cropped_image = image[bbox_2d[idx][1][0][1]:bbox_2d[idx][0][0][1],bbox_2d[idx][0][0][0]:bbox_2d[idx][1][0][0]]
 
