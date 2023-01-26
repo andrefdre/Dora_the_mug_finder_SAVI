@@ -109,7 +109,7 @@ This project was developed for Advanced Vision Systems class for the second repo
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This project uses ROS to use the kinect camera and is the CNN is built based on pytorch.
+This project uses ROS to aid the use of the kinect camera and the object classification CNN is built based on pytorch. To do object detection we use open3D.
 
 ### Prerequisites
 
@@ -117,14 +117,32 @@ To use this code first add the next line in the bashrc:
 
   ```
 #Dora The Mug FInder
-export DORA=/media/andre/Andre/dora_the_mug_finder
-export PYTHONPATH="$PYTHONPATH:/home/andre/catkin_ws/src/Dora_the_mug_finder_SAVI"
+export DORA=/home/andre/dora_the_mug_finder
+export PYTHONPATH="$PYTHONPATH:${HOME}/catkin_ws/src/Dora_the_mug_finder_SAVI"
   ```
+Replace the path of DORA to where all the datasets are store in your computer.
+Afterward compile the bashrc using:
+```
+source ~/.bashrc
+```
+
+Inside DORA folder should be a structure similar to:
+  - models
+  - rgbd-dataset
+  - rgbd-scenes-v2
+    - pc
+    - imgs
+  - rosbag
+
+
 
 ### Installation
-
-
-
+To install this package clone the repository inside the src folder of your catkinws running the code:
+```
+git clone https://github.com/andrefdre/Dora_the_mug_finder_SAVI.git
+cd ..
+catkin_make
+```
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
@@ -139,6 +157,22 @@ rosrun dora_the_mug_finder_bringup model_train.py -fn <folder_name> -mn <model_n
 ```
 
 Where the <folder_name> and <model_name> should be replaced by a name for the model. 
+
+If instead of using point clouds from the dataset want to use point clouds acquired from a Kinect stored in a rosbag run, before running the detector:
+```
+roslaunch dora_the_mug_finder_bringup bringup_bag.launch 
+```
+
+To run the detector with previous trained model run the code:
+```
+roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name>
+```
+
+If you want to visualize extracted images run:
+```
+roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> visualize:=True
+```
+Where the <folder_name> and <model_name> should be replaced by a name for the model previously set while training. 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 

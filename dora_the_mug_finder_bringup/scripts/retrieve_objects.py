@@ -6,7 +6,7 @@
 # SAVI, January 2023.
 # --------------------------------------------------
 
-# Other Packages imports
+# General Imports 
 import threading
 import time
 from more_itertools import locate
@@ -20,8 +20,13 @@ import argparse
 import sys
 import os
 import rospy
+from std_msgs.msg import String
+from sensor_msgs.msg import PointCloud2
+import sensor_msgs.point_cloud2 as pc2
+from ctypes import * # To convert float to uint32
 
-# Our Package imports
+
+# Oun Package imports
 from dora_the_mug_finder_msg.msg import Object , Point , Classes
 from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Transform
 from dora_the_mug_finder_bringup.src.utils import text_3d
@@ -49,18 +54,104 @@ view = {
 
 
 
-
-class Classification:
-
-    def __init__(self):
+# Class that will deal with ROS messages
+class ROSHandler:
+    def __init__(self,files_path):
         self.update_names = False
         self.object_names = []
+        self.files_path = files_path
+        self.scene_name = 'scene_01'
+        self.filename = self.files_path + '/rgbd-scenes-v2/pc/01.ply'
+        os.system('pcl_ply2pcd ' + self.filename + ' pcd_point_cloud.pcd')
+        self.point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
+        self.eps = 0.025
+        convert_rgbUint32_to_tuple = lambda rgb_uint32: ((rgb_uint32 & 0x00ff0000)>>16, (rgb_uint32 & 0x0000ff00)>>8, (rgb_uint32 & 0x000000ff))
+        convert_rgbFloat_to_tuple = lambda rgb_float: convert_rgbUint32_to_tuple(int(cast(pointer(c_float(rgb_float)), POINTER(c_uint32)).contents.value))
+        self.convert_rgbFloat_to_tuple = convert_rgbFloat_to_tuple
+        self.convert_rgbUint32_to_tuple = convert_rgbUint32_to_tuple
+        self.scenes_number_objects = {
+                '01': 5,
+                '02': 5,
+                '03': 5,
+                '04': 5,
+                '05': 4,
+                '06': 5,
+                '07': 5,
+                '08': 4,
+                '09': 3,
+                '10': 3,
+                '11': 3,
+                '12': 3,
+                '13': 4,
+                '14': 4,
+        }
+        self.scene_number_objects = 5
                             
 
-    def callback(self,data):
+    def callback_class(self,data):
         self.object_names = [name_string.data for name_string in data.classes]
 
+    def callback_kinect_ply(self,ros_cloud):
+        # Get cloud data from ros_cloud
+        field_names=[field.name for field in ros_cloud.fields]
+        cloud_data = list(pc2.read_points(ros_cloud, field_names = field_names))
 
+        # Check if it's empty
+        open3d_cloud = o3d.geometry.PointCloud()
+
+        if len(cloud_data)==0:
+            print(Style.BRIGHT, Fore.YELLOW, "Received Point Cloud message is empty", Style.RESET_ALL)
+            return None
+
+        # Set open3d_cloud
+        if "rgb" in field_names:
+            IDX_RGB_IN_FIELD=3 # x, y, z, rgb
+
+            # Get xyz
+            xyz = [(x,y,z) for x,y,z,rgb in cloud_data ]
+
+            # Get RGB
+            # Check whether int or float
+            if type(cloud_data[0][IDX_RGB_IN_FIELD])==float:
+                rgb = [self.convert_rgbFloat_to_tuple(rgb) for x,y,z,rgb in cloud_data ]
+
+            else:
+                rgb = [self.convert_rgbUint32_to_tuple(rgb) for x,y,z,rgb in cloud_data ]
+
+            # Combine
+            open3d_cloud.points = o3d.utility.Vector3dVector(np.array(xyz))
+            open3d_cloud.colors = o3d.utility.Vector3dVector(np.array(rgb)/255.0)
+
+        else:
+            xyz = [(x,y,z) for x,y,z in cloud_data ] # get xyz
+            open3d_cloud.points = o3d.utility.Vector3dVector(np.array(xyz))
+
+        self.kinect_cloud = open3d_cloud
+        
+        print("hi")
+
+    def callback_scene(self,data):
+        if data.data=='kinect':
+            self.scene_name = data.data
+            self.point_cloud_original = self.kinect_cloud
+            self.eps = 0.07
+            self.scene_number_objects = 'kinect'
+        else:
+            self.scene_name = data.data
+            scene_number = self.scene_name.split('_')
+            self.filename = self.files_path + f'/rgbd-scenes-v2/pc/{scene_number[-1]}.ply'
+            os.system('pcl_ply2pcd ' + self.filename + ' pcd_point_cloud.pcd')
+            self.point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
+            self.eps = 0.025
+            parts = self.filename.split('/')
+            part = parts[-1]
+            parts = part.split('.')
+            scene_number = parts[0]
+            self.scene_number_objects = self.scenes_number_objects[scene_number]
+
+
+
+# Class that will deal with visualization
 class Visualize:
     def __init__(self,vis):
         self.vis = vis
@@ -88,75 +179,34 @@ def main():
     parser = argparse.ArgumentParser(description='Data Collector')
     parser.add_argument('-v', '--visualize', action='store_true',
                         help='Visualize the point cloud')
-    parser.add_argument('-k', '--kinect', action='store_true',
-                        help='Visualize the point cloud')
+
     arglist = [x for x in sys.argv[1:] if not x.startswith('__')]
     args = vars(parser.parse_args(args=arglist))
 
     ###########################################
     # Ros Initialization                      #
     ###########################################
-    classification = Classification()
+    files_path=f'{os.environ["DORA"]}'
+
+    ros_handler = ROSHandler(files_path)
 
     pub = rospy.Publisher('objects_publisher', Object, queue_size=10)
-    rospy.Subscriber("class_publisher", Classes, classification.callback)
+    rospy.Subscriber("class_publisher", Classes, ros_handler.callback_class)
+    rospy.Subscriber("scene_publisher", String, ros_handler.callback_scene)
+    rospy.Subscriber("/camera/depth_registered/points", PointCloud2, ros_handler.callback_kinect_ply)
     rospy.init_node('objects', anonymous=False)
     rate = rospy.Rate(10) # 10hz
 
-    ###########################################
-    # Object detection Initialization         #
-    ###########################################
-    
-    files_path=f'{os.environ["DORA"]}'
-    
-    if args['kinect']==False:    
-        # Scene dataset paths
-        filenames = []
-        filenames.append (files_path + '/rgbd-scenes-v2/pc/05.ply')
-        #filenames = glob.glob(files_path + '/rgbd-scenes-v2/pc/*.ply')
-        file_idx = 0
-        
-        scenes_number_objects = {
-            '01': 5,
-            '02': 5,
-            '03': 5,
-            '04': 5,
-            '05': 4,
-            '06': 5,
-            '07': 5,
-            '08': 4,
-            '09': 3,
-            '10': 3,
-            '11': 3,
-            '12': 3,
-            '13': 4,
-            '14': 4
-        }
-
-        os.system('pcl_ply2pcd ' + filenames[file_idx] + ' pcd_point_cloud.pcd')
-        point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
-        
-        ########################################
-        # Cluster_dbscan parameters            #
-        ########################################
-        eps = 0.025
-    else:
-        filename = (files_path + '/rgbd-scenes-v2/bag_scenes/kinect_all_points.ply')
-        point_cloud_original = o3d.io.read_point_cloud(filename)
-        
-        ########################################
-        # Cluster_dbscan parameters            #
-        ########################################
-        eps = 0.07
-
-
+    ############################################
+    # Visualizer Initialization                #
+    ############################################
     vis = o3d.visualization.VisualizerWithKeyCallback()
     visualizer = Visualize(vis)
     vis.register_key_callback(32, visualizer.space_callback)
     
     vis.create_window("Scene")
     ctr = vis.get_view_control()
-    vis.add_geometry(point_cloud_original)
+    vis.add_geometry(ros_handler.point_cloud_original)
     ctr.set_front(view['trajectory'][0]['front'])
     ctr.set_up(view['trajectory'][0]['up'])
     ctr.set_lookat(view['trajectory'][0]['lookat'])
@@ -168,17 +218,18 @@ def main():
         # Gets the scene number and nº objects #
         ########################################
         if visualizer.flag_play:
-            if args['kinect']==False:  
-                parts = filenames[file_idx] .split('/')
-                part = parts[-1]
-                parts = part.split('.')
-                scene_number = parts[0]
-                scene_number_objects = scenes_number_objects[scene_number]
-
+            ####################################
+            # Initialization of loop           #
+            ####################################
+            # Creates copy of the information coming from ros to prevent changing during middle of the code
+            point_cloud_original = deepcopy(ros_handler.point_cloud_original)  
+            scene_name = ros_handler.scene_name
+            eps=ros_handler.eps
+            scene_number_objects = ros_handler.scene_number_objects
             ########################################
             # Find two planes                      #
             ########################################
-            # find two planes: table and another        
+            # find two planes: table and another     
             point_cloud_twoplanes = deepcopy(point_cloud_original) 
             number_of_planes = 2
             planes = []
@@ -208,6 +259,7 @@ def main():
             t.voxel_down_sample(plane_table.inlier_cloud,voxel_size=0.005)
             t.cluster(t.down_sampled_plane)
             t.table(t.cluster_idxs, t.object_idxs, t.down_sampled_plane)
+            
 
             ########################################
             # Frame alignment                      #
@@ -221,7 +273,7 @@ def main():
             
             plane_table.outlier_cloud = Transform(-x,-y,-z,0,0,0).rotate(plane_table.outlier_cloud)
             t.table = Transform(-x,-y,-z,0,0,0).rotate(t.table)
-
+            
             ########################################
             # Objects Detection                    #
             ########################################
@@ -232,15 +284,17 @@ def main():
             point_cloud_objects_noise = plane_table.outlier_cloud.crop(t.bbox)
     
             # objects
-            cluster_idxs = list(point_cloud_objects_noise.cluster_dbscan(eps=eps, min_points=100, print_progress=True))
+            cluster_idxs = list(point_cloud_objects_noise.cluster_dbscan(eps=eps, min_points=100, print_progress=False))
             object_idxs = list(set(cluster_idxs))
-            object_idxs.remove(-1) #Removes -1 cluster ID (-1 are the points not clustered)
+            if object_idxs[:] == -1:
+                object_idxs.remove(-1) #Removes -1 cluster ID (-1 are the points not clustered)
 
             objects = []    #Create the objects list
             threshold_z = 0
             threshold_dist = 0.7
-            threshold_width = 0.7
-            threshold_length = 0.7
+            threshold_width = 0.35
+            threshold_length = 0.35
+            threshold_height = 0.35
             #Here we find the points for each object and reunite them 
             for object_idx in object_idxs:
 
@@ -265,7 +319,7 @@ def main():
                 d['bbox_obj'] = d['points'].get_axis_aligned_bounding_box()
                 d['bbox_to_draw'] = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(d['bbox_obj'])
 
-                if d['z'] > threshold_z and dist < threshold_dist and d['width'] < threshold_width and d['length'] < threshold_length:       
+                if d['z'] > threshold_z and dist < threshold_dist and d['width'] < threshold_width and d['length'] < threshold_length and d['height'] < threshold_height:       
                     # condition of being object: Z center > 0, be close to the reference, not be too big
                     objects.append(d) #Add the dict of this object to the list
 
@@ -291,6 +345,7 @@ def main():
                 # Gets the center points
                 center = object['points'].get_center()
                 objects_3d.center.append(Point(center[0],center[1],center[2]))
+                objects_3d.scene = String(scene_name)
 
                 # Creates the entities to be drawn
                 sphere =o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
@@ -299,8 +354,9 @@ def main():
                 if args['visualize']: # Checks if the user wants to visualize the point cloud
                     entities.append(sphere)
                     entities.append(bbox_to_draw)
-                    if len(classification.object_names) == len(objects):
-                        text = f'{classification.object_names[object_idx]}'
+
+                    if len(ros_handler.object_names) == len(objects):
+                        text = f'{ros_handler.object_names[object_idx]}'
                         object_name = text_3d(text , font_size=7)
                         object_name = Transform(-x,y,z,0,0,0).rotate(object_name,letter=True)
                         object_name = Transform(0,0,0,center[0]-0.1,center[1]-0.2,center[2]).translate(object_name)
@@ -311,23 +367,26 @@ def main():
             ######################################
             # Visualization                      #
             ######################################
-            if args['kinect']==False and scene_number_objects != len(objects):
-                print(Fore.RED + 'number of objects is wrong' + Style.RESET_ALL)
+            if scene_number_objects != len(objects):
+                print(Fore.RED + f'number of objects is wrong. Detected {len(objects)}' + Style.RESET_ALL)
 
         if args['visualize'] and visualizer.flag_play: # Checks if the user wants to visualize the point cloud
-            if args['kinect']==False:
-                text = f'number of objects: {scene_number_objects}'
-                text_number_objects = text_3d(text , font_size=20)
-                text_number_objects = Transform(-x,y,z,0,0,0).rotate(text_number_objects,letter=True)
-                text_number_objects = Transform(0,0,0,tx-1,ty-1.3,tz).translate(text_number_objects)
-                entities.append(text_number_objects)
+            text = f'number of objects: {scene_number_objects}'
+            text_number_objects = text_3d(text , font_size=20)
+            text_number_objects = Transform(-x,y,z,0,0,0).rotate(text_number_objects,letter=True)
+            text_number_objects = Transform(0,0,0,tx-1,ty-1.3,tz).translate(text_number_objects)
+            entities.append(text_number_objects)
             entities.append(frame)
+            t.table = Transform(-x,y,z,0,0,0).rotate(t.table,inverse=True)
+            t.table = Transform(0,0,0,tx,ty,tz).translate(t.table)
+            entities.append(t.table)
             # Displays the entities
             vis.clear_geometries()
             vis.add_geometry(point_cloud_original,reset_bounding_box=False)
             for entity in entities:
                 vis.add_geometry(entity,reset_bounding_box=False)
 
+        print(f'{Fore.GREEN}Finished processing point cloud.{Style.RESET_ALL}')
         visualizer.visualize()
 
 
