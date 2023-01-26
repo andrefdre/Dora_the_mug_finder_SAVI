@@ -1,7 +1,7 @@
 std_msgs/String scene
 Point[] center
 Point[] corners
-String[] color
-Float64[] height
-Float64[] widht
-Float64[] length
+std_msgs/String[] color
+std_msgs/Float64[] height
+std_msgs/Float64[] widht
+std_msgs/Float64[] length
