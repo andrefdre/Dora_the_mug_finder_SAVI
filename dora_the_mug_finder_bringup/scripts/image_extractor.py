@@ -52,8 +52,8 @@ class ROSHandler:
             focal_length = camera_data['camera_matrix']['data'][0]
 
             camera_matrix = np.array([[focal_length, 0,            center[0]],
-                                    [0,            focal_length, center[1]],
-                                    [0,            0,            1]])
+                                    [0,            focal_length,   center[1]],
+                                    [0,            0,              1]])
 
             points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
             bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
@@ -98,14 +98,13 @@ class ROSHandler:
             center = [320 , 240]
             focal_length = 570.3
 
+            camera_matrix = np.array([[focal_length, 0,            center[0]],
+                                    [0,            focal_length, center[1]],
+                                    [0,            0,            1]])
+
+
 
             for filename in filenames:
-
-                image_number = filename.split('/')[-1].split('-')[0]
-              
-                camera_matrix = np.array([[focal_length, 0,            center[0]],
-                                        [0,            focal_length, center[1]],
-                                        [0,            0,            1]])
 
                 ########################################
                 # Points & Bbox 3D                     #
@@ -113,8 +112,10 @@ class ROSHandler:
                 points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
                 bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
                 
+                image_number = filename.split('/')[-1].split('-')[0]
                 # Apply matriz inverse: points, bbox_3d 
                 self.get_matrix_inv(filename_pose,image_number)
+    
 
                 for idx, _ in enumerate(points):
                     point = np.ones((1,4))
