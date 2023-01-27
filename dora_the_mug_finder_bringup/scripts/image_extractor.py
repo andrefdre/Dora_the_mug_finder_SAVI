@@ -6,22 +6,24 @@
 # SAVI, January 2023.
 # --------------------------------------------------
 
+# General Imports 
 from colorama import Fore, Style
+from cv_bridge import CvBridge
+import matplotlib.pyplot as plt
 import numpy as np
+import argparse
+import rospy
 import glob
 import os
 import cv2
-import matplotlib.pyplot as plt
-from sensor_msgs.msg import Image
-from cv_bridge import CvBridge
-import argparse
 import sys
 import yaml
-from scipy.spatial.transform import Rotation as R
 
-import rospy
+from sensor_msgs.msg import Image
+
+# Own package imports
 from dora_the_mug_finder_msg.msg import Object , Images
-
+from dora_the_mug_finder_bringup.src.image_processing import get_matrix_inv, get_iou
 
 class ROSHandler:
 
@@ -38,9 +40,9 @@ class ROSHandler:
     def callback(self,data):
         files_path=f'{os.environ["DORA"]}'
 
-
         # Scene images
-        filenames = []
+        filenames = sorted(glob.glob(files_path + f'/rgbd-scenes-v2/imgs/{data.scene.data}/*-color.png'))
+        
         if data.scene.data == 'kinect':
             # Camera parameters
             with open(f'{files_path}/rosbag/intrinsic.yaml', "r") as yamlfile:
@@ -49,146 +51,177 @@ class ROSHandler:
             focal_length = camera_data['camera_matrix']['data'][0]
 
             camera_matrix = np.array([[focal_length, 0,            center[0]],
-                                    [0,            focal_length, center[1]],
-                                    [0,            0,            1]])
+                                    [0,            focal_length,   center[1]],
+                                    [0,            0,              1]])
 
-        else:
-            # Scene dataset paths
-            filenames.append (files_path + f'/rgbd-scenes-v2/imgs/{data.scene.data}/00000-color.png')
+            points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
+            bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
+
+            # Project the 3D points to the 2D image plane
+            points_2d = cv2.projectPoints(points, np.identity(3), np.zeros(3), camera_matrix, None,)[0]
+
+            bbox_2d = []
+
+            for corners in bbox_3d:
+                bbox_2d.append(cv2.projectPoints(corners, np.identity(3), np.zeros(3), camera_matrix, None,)[0])
+
+            # Scale the points to image pixels
+            points_2d = np.round(points_2d).astype(int)
+            bbox_2d = abs(np.round(bbox_2d).astype(int))
+
+            # Blue color in BGR
+            color = (0, 251, 255)
         
-          # Pose dataset paths
-          filename_pose = (files_path + '/rgbd-scenes-v2/pc/05.pose')
+            # Line thickness of 5 px
+            thickness = 5
 
-          # Scene dataset paths
-          filenames = []
-          filenames.append (files_path + '/rgbd-scenes-v2/imgs/scene_05/00147-color.png')
-
-          points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
-          bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
-
-          # ????????????????????????????????????????????????????????????????
-
-          self.get_matrix_inv(filename_pose)
-
-          for idx, p in enumerate(points):
-              point = np.ones((1,4))
-              point[:,0:3] = points[idx]
-              point = np.transpose(point)
-              point = np.dot(self.matrix_inv,point)
-              points[idx,:]=np.transpose(point[0:3,:]) 
-
-          for idx, p in enumerate(bbox_3d): 
-              for n in range(0,2):
-                  bbox = np.ones((1,4))
-                  bbox[:,0:3] = bbox_3d[idx][n]
-                  bbox = np.transpose(bbox)
-                  bbox = np.dot(self.matrix_inv,bbox)
-                  bbox_3d[idx][n]=np.transpose(bbox[0:3,:]) 
-
-          # ????????????????????????????????????????????????????????????????   
+            self.cropped_images = Images()
+            image = cv2.cvtColor(self.kinect_image,cv2.COLOR_RGB2BGR)
+            for idx_objects,point_2d in enumerate(points_2d):
+                    #image[point_2d[0][1]-2:point_2d[0][1]+2,point_2d[0][0]-2:point_2d[0][0]+2]=color
+                    #image = cv2.rectangle(image, bbox_2d[idx][0][0], bbox_2d[idx][1][0], color, thickness)
+                    width = bbox_2d[idx_objects][1][0][0] - bbox_2d[idx_objects][0][0][0]
+                    height = bbox_2d[idx_objects][0][0][1] - bbox_2d[idx_objects][1][0][1]
+                    cropped_image = image[round(point_2d[0][1]-height/2):round(point_2d[0][1]+height/2),round(point_2d[0][0]-width/2):round(point_2d[0][0]+width/2)]
+                    if cropped_image.shape[0] == 0 or cropped_image.shape[1] == 0:
+                        print(f'{Fore.RED}Skipping Image due to inappropriate width/height. {Style.RESET_ALL}')
+                        continue 
+                    self.cropped_images.images.append(self.bridge.cv2_to_imgmsg(cropped_image, "passthrough"))
+        
+        else:
+            
+            # Pose dataset paths
+            scene_number = data.scene.data.split('_')  
+            filename_pose = (files_path + f'/rgbd-scenes-v2/pc/{scene_number[1]}.pose')
 
             # Camera parameters
             center = [320 , 240]
             focal_length = 570.3
 
-
             camera_matrix = np.array([[focal_length, 0,            center[0]],
                                     [0,            focal_length, center[1]],
                                     [0,            0,            1]])
-
-
-
-        points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
-        bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
-        
-        # Project the 3D points to the 2D image plane
-        points_2d = cv2.projectPoints(points, np.identity(3), np.zeros(3), camera_matrix, None,)[0]
-        # print('points_2d: \n',points_2d)
-
-        bbox_2d = []
-
-        for corners in bbox_3d:
-            bbox_2d.append(cv2.projectPoints(corners, np.identity(3), np.zeros(3), camera_matrix, None,)[0])
-
-        # Scale the points to image pixels
-        points_2d = np.round(points_2d).astype(int)
-        bbox_2d = abs(np.round(bbox_2d).astype(int))
-
-        # Blue color in BGR
-        color = (0, 251, 255)
-    
-        # Line thickness of 2 px
-        thickness = 2
-
-        self.cropped_images = Images()
-        if data.scene.data == 'kinect':
-            image = cv2.cvtColor(self.kinect_image,cv2.COLOR_RGB2BGR)
-            for idx,point_2d in enumerate(points_2d):
-                    #image[point_2d[0][1]-2:point_2d[0][1]+2,point_2d[0][0]-2:point_2d[0][0]+2]=color
-                    #image = cv2.rectangle(image, bbox_2d[idx][0][0], bbox_2d[idx][1][0], color, thickness)
-                    cropped_image = image[bbox_2d[idx][1][0][1]:bbox_2d[idx][0][0][1],bbox_2d[idx][0][0][0]:bbox_2d[idx][1][0][0]]
-                    if cropped_image.shape[0] == 0 or cropped_image.shape[1] == 0:
-                        print(f'{Fore.RED}Skipping Image due to inappropriate width/height. {Style.RESET_ALL}')
-                        continue 
-                    self.cropped_images.images.append(self.bridge.cv2_to_imgmsg(cropped_image, "passthrough"))
-        else:
+            
+            # initialization variables
+            images_dic = []
+            idx_images = list(range(len(data.center)))
+            idx_images_cropped = list(range(len(data.center)))
+            
             for filename in filenames:
+
+                ########################################
+                # Points & Bbox 3D                     #
+                ########################################
+                points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
+                bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
+                
+                image_number = filename.split('/')[-1].split('-')[0]
+                print(image_number)
+                # Apply matriz inverse: points, bbox_3d 
+                matrix_inv = get_matrix_inv(filename_pose,image_number)
+    
+                for idx_objects, _ in enumerate(points):
+                    point = np.ones((1,4))
+                    point[:,0:3] = points[idx_objects]
+                    point = np.transpose(point)
+                    point = np.dot(matrix_inv,point)
+                    points[idx_objects,:]=np.transpose(point[0:3,:]) 
+
+                for idx_objects, _ in enumerate(bbox_3d): 
+                    for n in range(0,2):
+                        bbox = np.ones((1,4))
+                        bbox[:,0:3] = bbox_3d[idx_objects][n]
+                        bbox = np.transpose(bbox)
+                        bbox = np.dot(matrix_inv,bbox)
+                        bbox_3d[idx_objects][n]=np.transpose(bbox[0:3,:]) 
+
+                ########################################
+                # Points & Bbox 2D                     #
+                ########################################
+                # Project the 3D points to the 2D image plane
+                points_2d = cv2.projectPoints(points, np.identity(3), np.zeros(3), camera_matrix, None,)[0]
+
+                bbox_2d = []
+                for corners in bbox_3d:
+                    bbox_2d.append(cv2.projectPoints(corners, np.identity(3), np.zeros(3), camera_matrix, None,)[0])
+
+                # Scale the points to image pixels
+                points_2d = np.round(points_2d).astype(int)
+                bbox_2d = np.round(bbox_2d).astype(int)
+  
+                # Blue color in BGR
+                color = (0, 251, 255)
+            
+                # Line thickness of 5 px
+                thickness = 5
+
+                self.cropped_images = Images()
+            
+                # create image
                 image = cv2.imread(filename)
                 image = cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
 
-                for idx,point_2d in enumerate(points_2d):
-                    #image[point_2d[0][1]-2:point_2d[0][1]+2,point_2d[0][0]-2:point_2d[0][0]+2]=color
-                    #image = cv2.rectangle(image, bbox_2d[idx][0][0], bbox_2d[idx][1][0], color, thickness)
-                    cropped_image = image[bbox_2d[idx][1][0][1]:bbox_2d[idx][0][0][1],bbox_2d[idx][0][0][0]:bbox_2d[idx][1][0][0]]
+                ###############################################
+                # Check the conditions for cropping the image #                                    #
+                ###############################################
+                
+                # check the bbox inside the image
+                h, w, _ = image.shape
+                ymaxs = [ymax[0][0][1] for ymax in bbox_2d]
+                ymins = [ymin[1][0][1] for ymin in bbox_2d]
+                xmaxs = [xmax[1][0][0] for xmax in bbox_2d]
+                xmins = [xmin[0][0][0] for xmin in bbox_2d]
+                x_pts = [xmin_pts[0][0] for xmin_pts in points_2d]
+                y_pts = [ymin_pts[0][1] for ymin_pts in points_2d]         
+                if min(ymins) < 0 or min(xmins) < 0 or max(xmaxs) > w or max(ymaxs) > h or min(x_pts) <= 0 or min(y_pts) <= 0:
+                    continue
+                
+                # check IOU bbox
+                idx_images_overlap = []
+                for idx1 in idx_images_cropped:
+                    bb1x_2d = bbox_2d[idx1]
+                    
+                    for idx2 in idx_images:
+                        bbx2_2d = bbox_2d[idx2]
+                        iou_bbx1 = get_iou(bb1x_2d,bbx2_2d)
+                        
+                        if idx1 != idx2 and iou_bbx1 > 0.05 and not idx1 in idx_images_overlap:                     
+                            idx_images_overlap.append(idx1)
 
-                    if cropped_image.shape[0] == 0 or cropped_image.shape[1] == 0:
-                        print(f'{Fore.RED}Skipping Image due to inappropriate width/height. {Style.RESET_ALL}')
-                        continue 
-                    self.cropped_images.images.append(self.bridge.cv2_to_imgmsg(cropped_image, "passthrough"))
+                for idx in idx_images_overlap:
+                    idx_images_cropped.remove(idx)
+           
 
+                ###############################################
+                # Cropped the image                           #                                    
+                ###############################################
+
+                for idx_object in idx_images_cropped:
+                    image[points_2d[idx_object][0][1]-thickness:points_2d[idx_object][0][1]+thickness,points_2d[idx_object][0][0]-thickness:points_2d[idx_object][0][0]+thickness]=color
+                    width = bbox_2d[idx_object][1][0][0] - bbox_2d[idx_object][0][0][0]
+                    height = bbox_2d[idx_object][0][0][1] - bbox_2d[idx_object][1][0][1]
+                    cropped_image = image[round(points_2d[idx_object][0][1]-height/2):round(points_2d[idx_object][0][1]+height/2),round(points_2d[idx_object][0][0]-width/2):round(points_2d[idx_object][0][0]+width/2)]
+                    
+                    # dictionary with idx_object and image cropped
+                    img_cropped = {}
+                    img_cropped['idx_object'] = idx_object
+                    img_cropped['image'] = cropped_image
+                    images_dic.append(img_cropped)
+                    
+                idx_images_cropped = idx_images_overlap
+
+                if len(idx_images_overlap) == 0:
+                    break
+        
+        # sort list of the dicionary
+        images_dic = sorted(images_dic, key=lambda d: d['idx_object'])
+
+
+        for images in images_dic:
+            self.cropped_images.images.append(self.bridge.cv2_to_imgmsg(images['image'], "passthrough"))
 
         self.pub.publish(self.cropped_images)
 
-
-    def get_matrix_inv(self,filename):
-        
-        with open(filename, "r") as pose:
-            file_pose = pose.readlines()
-            vector_pose_str = file_pose[147]
-
-            vector_pose_array = vector_pose_str.split(' ')
-            
-            # rotation matrix
-            r = R.from_quat([vector_pose_array[1], vector_pose_array[2], vector_pose_array[3], vector_pose_array[0]])
-            self.rot_matrix = r.as_matrix()
-            
-            # translation matrix
-            self.trans_matrix = np.array([vector_pose_array[4], vector_pose_array[5], vector_pose_array[6]], dtype=np.float32)
-            # self.trans_matrix = np.vstack(trans_matrix)
-
-            # homogeneous transformation matrix (4,4) 
-            l = 4
-            self.matrix = np.zeros((l,l))
-            self.matrix[0:3,0:3] = self.rot_matrix
-            self.matrix[0:3,3] = self.trans_matrix
-            self.matrix[3,3] = 1
-
-            # inverse matrices
-            self.matrix_inv = np.linalg.inv(self.matrix)
-            self.rot_matrix_inv, self.trans_matrix_inv = np.hsplit(np.array(self.matrix_inv), [l-1])
-            self.rot_matrix_inv = self.rot_matrix_inv[0:3,:]
-            self.trans_matrix_inv = self.trans_matrix_inv[0:3,:]
-
-            # prints
-            # print('rot matrix: \n', self.rot_matrix)
-            # print("trans:\n", self.trans_matrix)
-            # print("matrix:\n", self.matrix)
-            
-            # print("matrix inv:\n", self.matrix_inv)
-            # print('rot inv: \n', self.rot_matrix_inv)
-            # print('trans inv:\n', self.trans_matrix_inv)
-
-          
 
     def draw(self):
         plt.clf()
