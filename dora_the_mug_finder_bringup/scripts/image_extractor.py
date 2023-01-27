@@ -83,7 +83,6 @@ class ROSHandler:
                     width = bbox_2d[idx_objects][1][0][0] - bbox_2d[idx_objects][0][0][0]
                     height = bbox_2d[idx_objects][0][0][1] - bbox_2d[idx_objects][1][0][1]
                     cropped_image = image[round(point_2d[0][1]-height/2):round(point_2d[0][1]+height/2),round(point_2d[0][0]-width/2):round(point_2d[0][0]+width/2)]
-                    print(cropped_image)
                     if cropped_image.shape[0] == 0 or cropped_image.shape[1] == 0:
                         print(f'{Fore.RED}Skipping Image due to inappropriate width/height. {Style.RESET_ALL}')
                         continue 
@@ -148,8 +147,8 @@ class ROSHandler:
 
                 # Scale the points to image pixels
                 points_2d = np.round(points_2d).astype(int)
-                bbox_2d = abs(np.round(bbox_2d).astype(int))
-
+                bbox_2d = np.round(bbox_2d).astype(int)
+  
                 # Blue color in BGR
                 color = (0, 251, 255)
             
