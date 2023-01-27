@@ -7,7 +7,6 @@
 # --------------------------------------------------
 
 # General Imports 
-from scipy.spatial.transform import Rotation as R
 from colorama import Fore, Style
 from cv_bridge import CvBridge
 import matplotlib.pyplot as plt
@@ -24,7 +23,7 @@ from sensor_msgs.msg import Image
 
 # Own package imports
 from dora_the_mug_finder_msg.msg import Object , Images
-
+from image_processer import get_matrix_inv, get_iou
 
 class ROSHandler:
 
@@ -103,7 +102,6 @@ class ROSHandler:
                                     [0,            0,            1]])
 
 
-
             for filename in filenames:
 
                 ########################################
@@ -113,15 +111,15 @@ class ROSHandler:
                 bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
                 
                 image_number = filename.split('/')[-1].split('-')[0]
+                
                 # Apply matriz inverse: points, bbox_3d 
-                self.get_matrix_inv(filename_pose,image_number)
+                matrix_inv = get_matrix_inv(filename_pose,image_number)
     
-
                 for idx, _ in enumerate(points):
                     point = np.ones((1,4))
                     point[:,0:3] = points[idx]
                     point = np.transpose(point)
-                    point = np.dot(self.matrix_inv,point)
+                    point = np.dot(matrix_inv,point)
                     points[idx,:]=np.transpose(point[0:3,:]) 
 
                 for idx, _ in enumerate(bbox_3d): 
@@ -129,7 +127,7 @@ class ROSHandler:
                         bbox = np.ones((1,4))
                         bbox[:,0:3] = bbox_3d[idx][n]
                         bbox = np.transpose(bbox)
-                        bbox = np.dot(self.matrix_inv,bbox)
+                        bbox = np.dot(matrix_inv,bbox)
                         bbox_3d[idx][n]=np.transpose(bbox[0:3,:]) 
 
                 ########################################
@@ -180,13 +178,14 @@ class ROSHandler:
                         bb1_2d = bbox
                         for idx2 , bbox in enumerate(bbox_2d,start=1):
                             bb2_2d = bbox
-                            self.get_iou(bb1_2d,bb2_2d)
+                            iou_small = get_iou(bb1_2d,bb2_2d)
                             if idx1 != idx2:
-                                print('img:' + str(idx1) + ' with img:' + str(idx2) + ' iou:'+ str(self.iou_small))
-                                if self.iou_small > 0.6:
+                                print('img:' + str(idx1) + ' with img:' + str(idx2) + ' iou:'+ str(iou_small))
+                                if iou_small > 1.1:
                                     iou_overlap = True
-                                if self.iou_small == 1:
+                                if iou_small == 1.1:
                                     iou_overlap = True
+                    print(iou_overlap)
                     if iou_overlap:
                         continue
                 except:
@@ -207,73 +206,6 @@ class ROSHandler:
                 
         self.pub.publish(self.cropped_images)
 
-
-    def get_matrix_inv(self,filename,img_number):
-        
-        with open(filename, "r") as pose:
-            file_pose = pose.readlines()
-            vector_pose_str = file_pose[int(img_number)]
-
-            vector_pose_array = vector_pose_str.split(' ')
-            
-            # rotation matrix
-            r = R.from_quat([vector_pose_array[1], vector_pose_array[2], vector_pose_array[3], vector_pose_array[0]])
-            self.rot_matrix = r.as_matrix()
-            
-            # translation matrix
-            self.trans_matrix = np.array([vector_pose_array[4], vector_pose_array[5], vector_pose_array[6]], dtype=np.float32)
-
-            # homogeneous transformation matrix (4,4) 
-            l = 4
-            self.matrix = np.zeros((l,l))
-            self.matrix[0:3,0:3] = self.rot_matrix
-            self.matrix[0:3,3] = self.trans_matrix
-            self.matrix[3,3] = 1
-
-            # inverse matrices
-            self.matrix_inv = np.linalg.inv(self.matrix)
-
-
-    def get_iou(self,bb1_2d,bb2_2d):
-        """
-        Calculate the Intersection over Union (IoU) of two bounding boxes.
-
-        bb1 : dict
-            Keys: {'x1', 'x2', 'y1', 'y2'}
-            The (x1, y1) position is at the top left corner,
-            the (x2, y2) position is at the bottom right corner
-        bb2 : dict
-            Keys: {'x1', 'x2', 'y1', 'y2'}
-            The (x, y) position is at the top left corner,
-            the (x2, y2) position is at the bottom right corner
-        """
-
-        bb1 = {'x1': bb1_2d[0][0][0] , 'x2': bb1_2d[1][0][0] , 'y1': bb1_2d[1][0][1] , 'y2': bb1_2d[0][0][1]}
-        bb2 = {'x1': bb2_2d[0][0][0] , 'x2': bb2_2d[1][0][0] , 'y1': bb2_2d[1][0][1] , 'y2': bb2_2d[0][0][1]}
-
-        assert bb1['x1'] < bb1['x2']
-        assert bb1['y1'] < bb1['y2']
-        assert bb2['x1'] < bb2['x2']
-        assert bb2['y1'] < bb2['y2']
-        
-        # determine the coordinates of the intersection rectangle
-        x_left = max(bb1['x1'], bb2['x1'])
-        y_top = max(bb1['y1'], bb2['y1'])
-        x_right = min(bb1['x2'], bb2['x2'])
-        y_bottom = min(bb1['y2'], bb2['y2'])
-        
-        # The intersection of two axis-aligned bounding boxes is always an
-        # axis-aligned bounding box
-        intersection_area = abs(max((x_right - x_left),0) * max((y_bottom - y_top),0))
-        
-        # compute the area of both AABBs
-        bb1_area = (bb1['x2'] - bb1['x1']) * (bb1['y2'] - bb1['y1'])
-        bb2_area = (bb2['x2'] - bb2['x1']) * (bb2['y2'] - bb2['y1'])
-
-        # compute the intersection over union 
-        self.iou_int = intersection_area / float(bb1_area + bb2_area - intersection_area)
-        self.iou_small = intersection_area / float(bb1_area)
-        
 
     def draw(self):
         plt.clf()
