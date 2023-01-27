@@ -7,7 +7,6 @@ import glob
 import sys
 from torchvision import transforms
 import matplotlib.pyplot as plt
-from colorama import Fore, Style
 import torch
 from PIL import Image
 from cv_bridge import CvBridge, CvBridgeError

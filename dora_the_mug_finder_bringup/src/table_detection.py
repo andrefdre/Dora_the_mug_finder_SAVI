@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 from more_itertools import locate
 import open3d as o3d
 import numpy as np

@@ -8,7 +8,6 @@
 
 from colorama import Fore, Style
 import numpy as np
-import glob
 import os
 import cv2
 import matplotlib.pyplot as plt

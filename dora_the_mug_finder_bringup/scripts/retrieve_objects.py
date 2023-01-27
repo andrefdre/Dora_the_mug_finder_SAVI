@@ -7,14 +7,11 @@
 # --------------------------------------------------
 
 # General Imports 
-import threading
-import time
 from more_itertools import locate
 from colorama import Fore, Style
 from copy import deepcopy
 from math import sqrt
 import open3d as o3d
-import open3d.visualization.gui as gui
 import numpy as np
 import argparse
 import sys
