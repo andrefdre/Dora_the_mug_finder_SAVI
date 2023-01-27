@@ -44,54 +44,20 @@ class ROSHandler:
         # Scene images
         filenames = sorted(glob.glob(files_path + f'/rgbd-scenes-v2/imgs/{data.scene.data}/*-color.png'))
         
-        for filename in filenames:
+        if data.scene.data == 'kinect':
+            # Camera parameters
+            with open(f'{files_path}/rosbag/intrinsic.yaml', "r") as yamlfile:
+                camera_data = yaml.load(yamlfile, Loader=yaml.FullLoader)
+            center = [camera_data['camera_matrix']['data'][2] , camera_data['camera_matrix']['data'][5]]
+            focal_length = camera_data['camera_matrix']['data'][0]
 
-            if data.scene.data == 'kinect':
-                # Camera parameters
-                with open(f'{files_path}/rosbag/intrinsic.yaml', "r") as yamlfile:
-                    camera_data = yaml.load(yamlfile, Loader=yaml.FullLoader)
-                center = [camera_data['camera_matrix']['data'][2] , camera_data['camera_matrix']['data'][5]]
-                focal_length = camera_data['camera_matrix']['data'][0]
-
-                camera_matrix = np.array([[focal_length, 0,            center[0]],
-                                        [0,            focal_length, center[1]],
-                                        [0,            0,            1]])
-
-            else:
-                # Pose dataset paths
-                scene_number = data.scene.data.split('_')  
-                filename_pose = (files_path + f'/rgbd-scenes-v2/pc/{scene_number[1]}.pose')
-                image_number = filename.split('/')[-1].split('-')[0]
-                print('nº: ',image_number)
-                # Camera parameters
-                center = [320 , 240]
-                focal_length = 570.3
-
-                camera_matrix = np.array([[focal_length, 0,            center[0]],
-                                        [0,            focal_length, center[1]],
-                                        [0,            0,            1]])
+            camera_matrix = np.array([[focal_length, 0,            center[0]],
+                                    [0,            focal_length, center[1]],
+                                    [0,            0,            1]])
 
             points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
             bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
-            
-            if data.scene.data != 'kinect':
-                self.get_matrix_inv(filename_pose,image_number)
 
-                for idx, _ in enumerate(points):
-                    point = np.ones((1,4))
-                    point[:,0:3] = points[idx]
-                    point = np.transpose(point)
-                    point = np.dot(self.matrix_inv,point)
-                    points[idx,:]=np.transpose(point[0:3,:]) 
-
-                for idx, _ in enumerate(bbox_3d): 
-                    for n in range(0,2):
-                        bbox = np.ones((1,4))
-                        bbox[:,0:3] = bbox_3d[idx][n]
-                        bbox = np.transpose(bbox)
-                        bbox = np.dot(self.matrix_inv,bbox)
-                        bbox_3d[idx][n]=np.transpose(bbox[0:3,:]) 
-  
             # Project the 3D points to the 2D image plane
             points_2d = cv2.projectPoints(points, np.identity(3), np.zeros(3), camera_matrix, None,)[0]
 
@@ -111,22 +77,88 @@ class ROSHandler:
             thickness = 5
 
             self.cropped_images = Images()
-            if data.scene.data == 'kinect':
-                image = cv2.cvtColor(self.kinect_image,cv2.COLOR_RGB2BGR)
-                for idx,point_2d in enumerate(points_2d):
-                        #image[point_2d[0][1]-2:point_2d[0][1]+2,point_2d[0][0]-2:point_2d[0][0]+2]=color
-                        #image = cv2.rectangle(image, bbox_2d[idx][0][0], bbox_2d[idx][1][0], color, thickness)
-                        cropped_image = image[bbox_2d[idx][1][0][1]:bbox_2d[idx][0][0][1],bbox_2d[idx][0][0][0]:bbox_2d[idx][1][0][0]]
-                        print(cropped_image)
-                        if cropped_image.shape[0] == 0 or cropped_image.shape[1] == 0:
-                            print(f'{Fore.RED}Skipping Image due to inappropriate width/height. {Style.RESET_ALL}')
-                            continue 
-                        self.cropped_images.images.append(self.bridge.cv2_to_imgmsg(cropped_image, "passthrough"))
-            else:
+            image = cv2.cvtColor(self.kinect_image,cv2.COLOR_RGB2BGR)
+            for idx,point_2d in enumerate(points_2d):
+                    #image[point_2d[0][1]-2:point_2d[0][1]+2,point_2d[0][0]-2:point_2d[0][0]+2]=color
+                    #image = cv2.rectangle(image, bbox_2d[idx][0][0], bbox_2d[idx][1][0], color, thickness)
+                    cropped_image = image[bbox_2d[idx][1][0][1]:bbox_2d[idx][0][0][1],bbox_2d[idx][0][0][0]:bbox_2d[idx][1][0][0]]
+                    print(cropped_image)
+                    if cropped_image.shape[0] == 0 or cropped_image.shape[1] == 0:
+                        print(f'{Fore.RED}Skipping Image due to inappropriate width/height. {Style.RESET_ALL}')
+                        continue 
+                    self.cropped_images.images.append(self.bridge.cv2_to_imgmsg(cropped_image, "passthrough"))
+        
+        else:
+
+            for filename in filenames:
+
+                # Pose dataset paths
+                scene_number = data.scene.data.split('_')  
+                filename_pose = (files_path + f'/rgbd-scenes-v2/pc/{scene_number[1]}.pose')
+                image_number = filename.split('/')[-1].split('-')[0]
+              
+                # Camera parameters
+                center = [320 , 240]
+                focal_length = 570.3
+
+                camera_matrix = np.array([[focal_length, 0,            center[0]],
+                                        [0,            focal_length, center[1]],
+                                        [0,            0,            1]])
+
+                ########################################
+                # Points & Bbox 3D                     #
+                ########################################
+                points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
+                bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
+                
+                # Apply matriz inverse: points, bbox_3d 
+                self.get_matrix_inv(filename_pose,image_number)
+
+                for idx, _ in enumerate(points):
+                    point = np.ones((1,4))
+                    point[:,0:3] = points[idx]
+                    point = np.transpose(point)
+                    point = np.dot(self.matrix_inv,point)
+                    points[idx,:]=np.transpose(point[0:3,:]) 
+
+                for idx, _ in enumerate(bbox_3d): 
+                    for n in range(0,2):
+                        bbox = np.ones((1,4))
+                        bbox[:,0:3] = bbox_3d[idx][n]
+                        bbox = np.transpose(bbox)
+                        bbox = np.dot(self.matrix_inv,bbox)
+                        bbox_3d[idx][n]=np.transpose(bbox[0:3,:]) 
+
+                ########################################
+                # Points & Bbox 2D                     #
+                ########################################
+                # Project the 3D points to the 2D image plane
+                points_2d = cv2.projectPoints(points, np.identity(3), np.zeros(3), camera_matrix, None,)[0]
+
+                bbox_2d = []
+                for corners in bbox_3d:
+                    bbox_2d.append(cv2.projectPoints(corners, np.identity(3), np.zeros(3), camera_matrix, None,)[0])
+
+                # Scale the points to image pixels
+                points_2d = np.round(points_2d).astype(int)
+                bbox_2d = abs(np.round(bbox_2d).astype(int))
+
+                # Blue color in BGR
+                color = (0, 251, 255)
+            
+                # Line thickness of 5 px
+                thickness = 5
+
+                self.cropped_images = Images()
+            
                 # create image
                 image = cv2.imread(filename)
                 image = cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
 
+                ########################################
+                #                                      #
+                ########################################
+                
                 # check the bbox inside the image
                 h, w, _ = image.shape
                 ymaxs = [ymax[0][0][1] for ymax in bbox_2d]
@@ -147,9 +179,10 @@ class ROSHandler:
                             bb2_2d = bbox
                             self.get_iou(bb1_2d,bb2_2d)
                             if idx1 != idx2:
-                                if self.iou_int > 0.2:
+                                print('img:' + str(idx1) + ' with img:' + str(idx2) + ' iou:'+ str(self.iou_small))
+                                if self.iou_small > 0.6:
                                     iou_overlap = True
-                                if self.iou_small == 1.0:
+                                if self.iou_small == 1:
                                     iou_overlap = True
                     if iou_overlap:
                         continue
@@ -168,7 +201,7 @@ class ROSHandler:
                 
                 
                 break
-            
+                
         self.pub.publish(self.cropped_images)
 
 
@@ -202,8 +235,6 @@ class ROSHandler:
         """
         Calculate the Intersection over Union (IoU) of two bounding boxes.
 
-        Parameters
-        ----------
         bb1 : dict
             Keys: {'x1', 'x2', 'y1', 'y2'}
             The (x1, y1) position is at the top left corner,
@@ -212,12 +243,8 @@ class ROSHandler:
             Keys: {'x1', 'x2', 'y1', 'y2'}
             The (x, y) position is at the top left corner,
             the (x2, y2) position is at the bottom right corner
-
-        Returns
-        -------
-        float
-            in [0, 1]
         """
+
         bb1 = {'x1': bb1_2d[0][0][0] , 'x2': bb1_2d[1][0][0] , 'y1': bb1_2d[1][0][1] , 'y2': bb1_2d[0][0][1]}
         bb2 = {'x1': bb2_2d[0][0][0] , 'x2': bb2_2d[1][0][0] , 'y1': bb2_2d[1][0][1] , 'y2': bb2_2d[0][0][1]}
 
@@ -232,20 +259,15 @@ class ROSHandler:
         x_right = min(bb1['x2'], bb2['x2'])
         y_bottom = min(bb1['y2'], bb2['y2'])
         
-        # if x_right < x_left or y_bottom < y_top:
-        #     return 0.0
-
         # The intersection of two axis-aligned bounding boxes is always an
         # axis-aligned bounding box
-        intersection_area = (x_right - x_left) * (y_bottom - y_top)
+        intersection_area = abs(max((x_right - x_left),0) * max((y_bottom - y_top),0))
         
         # compute the area of both AABBs
         bb1_area = (bb1['x2'] - bb1['x1']) * (bb1['y2'] - bb1['y1'])
         bb2_area = (bb2['x2'] - bb2['x1']) * (bb2['y2'] - bb2['y1'])
 
-        # compute the intersection over union by taking the intersection
-        # area and dividing it by the sum of prediction + ground-truth
-        # areas - the interesection area
+        # compute the intersection over union 
         self.iou_int = intersection_area / float(bb1_area + bb2_area - intersection_area)
         self.iou_small = intersection_area / float(bb1_area)
         
