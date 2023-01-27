@@ -45,7 +45,6 @@ def get_iou(bb1_2d,bb2_2d):
 
         bb1 = {'x1': bb1_2d[0][0][0] , 'x2': bb1_2d[1][0][0] , 'y1': bb1_2d[1][0][1] , 'y2': bb1_2d[0][0][1]}
         bb2 = {'x1': bb2_2d[0][0][0] , 'x2': bb2_2d[1][0][0] , 'y1': bb2_2d[1][0][1] , 'y2': bb2_2d[0][0][1]}
-
         
         # determine the coordinates of the intersection rectangle
         x_left = max(bb1['x1'], bb2['x1'])
