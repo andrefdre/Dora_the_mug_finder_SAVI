@@ -6,20 +6,23 @@
 # SAVI, January 2023.
 # --------------------------------------------------
 
+# General Imports 
+from scipy.spatial.transform import Rotation as R
 from colorama import Fore, Style
+from cv_bridge import CvBridge
+import matplotlib.pyplot as plt
 import numpy as np
+import argparse
+import rospy
 import glob
 import os
 import cv2
-import matplotlib.pyplot as plt
-from sensor_msgs.msg import Image
-from cv_bridge import CvBridge
-import argparse
 import sys
 import yaml
-from scipy.spatial.transform import Rotation as R
 
-import rospy
+from sensor_msgs.msg import Image
+
+# Own package imports
 from dora_the_mug_finder_msg.msg import Object , Images
 
 
@@ -59,7 +62,7 @@ class ROSHandler:
                 scene_number = data.scene.data.split('_')  
                 filename_pose = (files_path + f'/rgbd-scenes-v2/pc/{scene_number[1]}.pose')
                 image_number = filename.split('/')[-1].split('-')[0]
-                print(image_number)
+                print('nº: ',image_number)
                 # Camera parameters
                 center = [320 , 240]
                 focal_length = 570.3
@@ -91,7 +94,6 @@ class ROSHandler:
   
             # Project the 3D points to the 2D image plane
             points_2d = cv2.projectPoints(points, np.identity(3), np.zeros(3), camera_matrix, None,)[0]
-            #print('points_2d: \n',points_2d)
 
             bbox_2d = []
 
@@ -105,8 +107,8 @@ class ROSHandler:
             # Blue color in BGR
             color = (0, 251, 255)
         
-            # Line thickness of 2 px
-            thickness = 2
+            # Line thickness of 5 px
+            thickness = 5
 
             self.cropped_images = Images()
             if data.scene.data == 'kinect':
@@ -121,38 +123,52 @@ class ROSHandler:
                             continue 
                         self.cropped_images.images.append(self.bridge.cv2_to_imgmsg(cropped_image, "passthrough"))
             else:
-                print(filename)
+                # create image
                 image = cv2.imread(filename)
                 image = cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
+
+                # check the bbox inside the image
                 h, w, _ = image.shape
-             
                 ymaxs = [ymax[0][0][1] for ymax in bbox_2d]
                 ymins = [ymin[1][0][1] for ymin in bbox_2d]
                 xmaxs = [xmax[1][0][0] for xmax in bbox_2d]
                 xmins = [xmin[0][0][0] for xmin in bbox_2d]
                 x_pts = [xmin_pts[0][0] for xmin_pts in points_2d]
-                y_pts = [ymin_pts[0][1] for ymin_pts in points_2d]
-
-                print('h: ',h)
-                print('w: ',h)
-                print(x_pts,y_pts)
-                print(xmins,ymins,xmaxs,ymaxs)   
-                print(bbox_2d)            
+                y_pts = [ymin_pts[0][1] for ymin_pts in points_2d]         
                 if min(ymins) < 0 or min(xmins) < 0 or max(xmaxs) > w or max(ymaxs) > h or min(x_pts) <= 0 or min(y_pts) <= 0:
                     continue
-                      
                 
+                # check IOU bbox
+                try:
+                    iou_overlap = False
+                    for idx1 , bbox in enumerate(bbox_2d,start=1):
+                        bb1_2d = bbox
+                        for idx2 , bbox in enumerate(bbox_2d,start=1):
+                            bb2_2d = bbox
+                            self.get_iou(bb1_2d,bb2_2d)
+                            if idx1 != idx2:
+                                if self.iou_int > 0.2:
+                                    iou_overlap = True
+                                if self.iou_small == 1.0:
+                                    iou_overlap = True
+                    if iou_overlap:
+                        continue
+                except:
+                    continue
+                        
+                # cropped images
                 for idx,point_2d in enumerate(points_2d):
-                    #image[point_2d[0][1]-5:point_2d[0][1]+5,point_2d[0][0]-5:point_2d[0][0]+5]=color
+                    image[point_2d[0][1]-thickness:point_2d[0][1]+thickness,point_2d[0][0]-thickness:point_2d[0][0]+thickness]=color
                     #image = cv2.rectangle(image, bbox_2d[idx][0][0], bbox_2d[idx][1][0], color, thickness)
                     cropped_image = image[bbox_2d[idx][1][0][1]:bbox_2d[idx][0][0][1],bbox_2d[idx][0][0][0]:bbox_2d[idx][1][0][0]]
                     #print(cropped_image)
                     if cropped_image.shape[0] == 0 and cropped_image.shape[1] == 0:
                         print(f'{Fore.RED}Skipping Image due to inappropriate width/height. {Style.RESET_ALL}')
                         continue 
-                                                
+                                            
                     self.cropped_images.images.append(self.bridge.cv2_to_imgmsg(cropped_image, "passthrough"))
-
+                
+                
                 break
             
         self.pub.publish(self.cropped_images)
@@ -172,7 +188,6 @@ class ROSHandler:
             
             # translation matrix
             self.trans_matrix = np.array([vector_pose_array[4], vector_pose_array[5], vector_pose_array[6]], dtype=np.float32)
-            # self.trans_matrix = np.vstack(trans_matrix)
 
             # homogeneous transformation matrix (4,4) 
             l = 4
@@ -183,20 +198,59 @@ class ROSHandler:
 
             # inverse matrices
             self.matrix_inv = np.linalg.inv(self.matrix)
-            self.rot_matrix_inv, self.trans_matrix_inv = np.hsplit(np.array(self.matrix_inv), [l-1])
-            self.rot_matrix_inv = self.rot_matrix_inv[0:3,:]
-            self.trans_matrix_inv = self.trans_matrix_inv[0:3,:]
 
-            # prints
-            # print('rot matrix: \n', self.rot_matrix)
-            # print("trans:\n", self.trans_matrix)
-            # print("matrix:\n", self.matrix)
-            
-            # print("matrix inv:\n", self.matrix_inv)
-            # print('rot inv: \n', self.rot_matrix_inv)
-            # print('trans inv:\n', self.trans_matrix_inv)
 
-          
+    def get_iou(self,bb1_2d,bb2_2d):
+        """
+        Calculate the Intersection over Union (IoU) of two bounding boxes.
+
+        Parameters
+        ----------
+        bb1 : dict
+            Keys: {'x1', 'x2', 'y1', 'y2'}
+            The (x1, y1) position is at the top left corner,
+            the (x2, y2) position is at the bottom right corner
+        bb2 : dict
+            Keys: {'x1', 'x2', 'y1', 'y2'}
+            The (x, y) position is at the top left corner,
+            the (x2, y2) position is at the bottom right corner
+
+        Returns
+        -------
+        float
+            in [0, 1]
+        """
+        bb1 = {'x1': bb1_2d[0][0][0] , 'x2': bb1_2d[1][0][0] , 'y1': bb1_2d[1][0][1] , 'y2': bb1_2d[0][0][1]}
+        bb2 = {'x1': bb2_2d[0][0][0] , 'x2': bb2_2d[1][0][0] , 'y1': bb2_2d[1][0][1] , 'y2': bb2_2d[0][0][1]}
+
+        assert bb1['x1'] < bb1['x2']
+        assert bb1['y1'] < bb1['y2']
+        assert bb2['x1'] < bb2['x2']
+        assert bb2['y1'] < bb2['y2']
+        
+        # determine the coordinates of the intersection rectangle
+        x_left = max(bb1['x1'], bb2['x1'])
+        y_top = max(bb1['y1'], bb2['y1'])
+        x_right = min(bb1['x2'], bb2['x2'])
+        y_bottom = min(bb1['y2'], bb2['y2'])
+        
+        # if x_right < x_left or y_bottom < y_top:
+        #     return 0.0
+
+        # The intersection of two axis-aligned bounding boxes is always an
+        # axis-aligned bounding box
+        intersection_area = (x_right - x_left) * (y_bottom - y_top)
+        
+        # compute the area of both AABBs
+        bb1_area = (bb1['x2'] - bb1['x1']) * (bb1['y2'] - bb1['y1'])
+        bb2_area = (bb2['x2'] - bb2['x1']) * (bb2['y2'] - bb2['y1'])
+
+        # compute the intersection over union by taking the intersection
+        # area and dividing it by the sum of prediction + ground-truth
+        # areas - the interesection area
+        self.iou_int = intersection_area / float(bb1_area + bb2_area - intersection_area)
+        self.iou_small = intersection_area / float(bb1_area)
+        
 
     def draw(self):
         plt.clf()
