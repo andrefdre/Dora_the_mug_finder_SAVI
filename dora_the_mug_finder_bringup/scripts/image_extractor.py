@@ -23,7 +23,7 @@ from sensor_msgs.msg import Image
 
 # Own package imports
 from dora_the_mug_finder_msg.msg import Object , Images
-from image_processer import get_matrix_inv, get_iou
+from dora_the_mug_finder_bringup.src.image_processing import get_matrix_inv, get_iou
 
 class ROSHandler:
 
@@ -77,11 +77,11 @@ class ROSHandler:
 
             self.cropped_images = Images()
             image = cv2.cvtColor(self.kinect_image,cv2.COLOR_RGB2BGR)
-            for idx,point_2d in enumerate(points_2d):
+            for idx_objects,point_2d in enumerate(points_2d):
                     #image[point_2d[0][1]-2:point_2d[0][1]+2,point_2d[0][0]-2:point_2d[0][0]+2]=color
                     #image = cv2.rectangle(image, bbox_2d[idx][0][0], bbox_2d[idx][1][0], color, thickness)
-                    width = bbox_2d[idx][1][0][0] - bbox_2d[idx][0][0][0]
-                    height = bbox_2d[idx][0][0][1] - bbox_2d[idx][1][0][1]
+                    width = bbox_2d[idx_objects][1][0][0] - bbox_2d[idx_objects][0][0][0]
+                    height = bbox_2d[idx_objects][0][0][1] - bbox_2d[idx_objects][1][0][1]
                     cropped_image = image[round(point_2d[0][1]-height/2):round(point_2d[0][1]+height/2),round(point_2d[0][0]-width/2):round(point_2d[0][0]+width/2)]
                     print(cropped_image)
                     if cropped_image.shape[0] == 0 or cropped_image.shape[1] == 0:
@@ -102,8 +102,12 @@ class ROSHandler:
             camera_matrix = np.array([[focal_length, 0,            center[0]],
                                     [0,            focal_length, center[1]],
                                     [0,            0,            1]])
-
-
+            
+            # initialization variables
+            images_dic = []
+            idx_images = list(range(len(data.center)))
+            idx_images_cropped = list(range(len(data.center)))
+            
             for filename in filenames:
 
                 ########################################
@@ -113,24 +117,24 @@ class ROSHandler:
                 bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
                 
                 image_number = filename.split('/')[-1].split('-')[0]
-                
+                print(image_number)
                 # Apply matriz inverse: points, bbox_3d 
                 matrix_inv = get_matrix_inv(filename_pose,image_number)
     
-                for idx, _ in enumerate(points):
+                for idx_objects, _ in enumerate(points):
                     point = np.ones((1,4))
-                    point[:,0:3] = points[idx]
+                    point[:,0:3] = points[idx_objects]
                     point = np.transpose(point)
                     point = np.dot(matrix_inv,point)
-                    points[idx,:]=np.transpose(point[0:3,:]) 
+                    points[idx_objects,:]=np.transpose(point[0:3,:]) 
 
-                for idx, _ in enumerate(bbox_3d): 
+                for idx_objects, _ in enumerate(bbox_3d): 
                     for n in range(0,2):
                         bbox = np.ones((1,4))
-                        bbox[:,0:3] = bbox_3d[idx][n]
+                        bbox[:,0:3] = bbox_3d[idx_objects][n]
                         bbox = np.transpose(bbox)
                         bbox = np.dot(matrix_inv,bbox)
-                        bbox_3d[idx][n]=np.transpose(bbox[0:3,:]) 
+                        bbox_3d[idx_objects][n]=np.transpose(bbox[0:3,:]) 
 
                 ########################################
                 # Points & Bbox 2D                     #
@@ -158,9 +162,9 @@ class ROSHandler:
                 image = cv2.imread(filename)
                 image = cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
 
-                ########################################
-                #                                      #
-                ########################################
+                ###############################################
+                # Check the conditions for cropping the image #                                    #
+                ###############################################
                 
                 # check the bbox inside the image
                 h, w, _ = image.shape
@@ -174,39 +178,49 @@ class ROSHandler:
                     continue
                 
                 # check IOU bbox
-                try:
-                    iou_overlap = False
-                    for idx1 , bbox in enumerate(bbox_2d,start=1):
-                        bb1_2d = bbox
-                        for idx2 , bbox in enumerate(bbox_2d,start=1):
-                            bb2_2d = bbox
-                            iou_small = get_iou(bb1_2d,bb2_2d)
-                            if idx1 != idx2:
-                                print('img:' + str(idx1) + ' with img:' + str(idx2) + ' iou:'+ str(iou_small))
-                                if iou_small > 1.1:
-                                    iou_overlap = True
-                                if iou_small == 1.1:
-                                    iou_overlap = True
-                    print(iou_overlap)
-                    if iou_overlap:
-                        continue
-                except:
-                    continue
+                idx_images_overlap = []
+                for idx1 in idx_images_cropped:
+                    bb1x_2d = bbox_2d[idx1]
+                    
+                    for idx2 in idx_images:
+                        bbx2_2d = bbox_2d[idx2]
+                        iou_bbx1 = get_iou(bb1x_2d,bbx2_2d)
                         
-                # cropped images
-                for idx,point_2d in enumerate(points_2d):
-                    image[point_2d[0][1]-thickness:point_2d[0][1]+thickness,point_2d[0][0]-thickness:point_2d[0][0]+thickness]=color
-                    width = bbox_2d[idx][1][0][0] - bbox_2d[idx][0][0][0]
-                    height = bbox_2d[idx][0][0][1] - bbox_2d[idx][1][0][1]
-                    cropped_image = image[round(point_2d[0][1]-height/2):round(point_2d[0][1]+height/2),round(point_2d[0][0]-width/2):round(point_2d[0][0]+width/2)]
-                    if cropped_image.shape[0] == 0 and cropped_image.shape[1] == 0:
-                        print(f'{Fore.RED}Skipping Image due to inappropriate width/height. {Style.RESET_ALL}')
-                        continue                       
-                    self.cropped_images.images.append(self.bridge.cv2_to_imgmsg(cropped_image, "passthrough"))
-                
-                
-                break
-                
+                        if idx1 != idx2 and iou_bbx1 > 0.05 and not idx1 in idx_images_overlap:                     
+                            idx_images_overlap.append(idx1)
+
+                for idx in idx_images_overlap:
+                    idx_images_cropped.remove(idx)
+           
+
+                ###############################################
+                # Cropped the image                           #                                    
+                ###############################################
+
+                for idx_object in idx_images_cropped:
+                    image[points_2d[idx_object][0][1]-thickness:points_2d[idx_object][0][1]+thickness,points_2d[idx_object][0][0]-thickness:points_2d[idx_object][0][0]+thickness]=color
+                    width = bbox_2d[idx_object][1][0][0] - bbox_2d[idx_object][0][0][0]
+                    height = bbox_2d[idx_object][0][0][1] - bbox_2d[idx_object][1][0][1]
+                    cropped_image = image[round(points_2d[idx_object][0][1]-height/2):round(points_2d[idx_object][0][1]+height/2),round(points_2d[idx_object][0][0]-width/2):round(points_2d[idx_object][0][0]+width/2)]
+                    
+                    # dictionary with idx_object and image cropped
+                    img_cropped = {}
+                    img_cropped['idx_object'] = idx_object
+                    img_cropped['image'] = cropped_image
+                    images_dic.append(img_cropped)
+                    
+                idx_images_cropped = idx_images_overlap
+
+                if len(idx_images_overlap) == 0:
+                    break
+        
+        # sort list of the dicionary
+        images_dic = sorted(images_dic, key=lambda d: d['idx_object'])
+
+
+        for images in images_dic:
+            self.cropped_images.images.append(self.bridge.cv2_to_imgmsg(images['image'], "passthrough"))
+
         self.pub.publish(self.cropped_images)
 
 
