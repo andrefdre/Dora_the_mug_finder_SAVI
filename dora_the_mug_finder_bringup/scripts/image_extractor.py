@@ -80,7 +80,9 @@ class ROSHandler:
             for idx,point_2d in enumerate(points_2d):
                     #image[point_2d[0][1]-2:point_2d[0][1]+2,point_2d[0][0]-2:point_2d[0][0]+2]=color
                     #image = cv2.rectangle(image, bbox_2d[idx][0][0], bbox_2d[idx][1][0], color, thickness)
-                    cropped_image = image[bbox_2d[idx][1][0][1]:bbox_2d[idx][0][0][1],bbox_2d[idx][0][0][0]:bbox_2d[idx][1][0][0]]
+                    width = bbox_2d[idx][1][0][0] - bbox_2d[idx][0][0][0]
+                    height = bbox_2d[idx][0][0][1] - bbox_2d[idx][1][0][1]
+                    cropped_image = image[round(point_2d[0][1]-height/2):round(point_2d[0][1]+height/2),round(point_2d[0][0]-width/2):round(point_2d[0][0]+width/2)]
                     print(cropped_image)
                     if cropped_image.shape[0] == 0 or cropped_image.shape[1] == 0:
                         print(f'{Fore.RED}Skipping Image due to inappropriate width/height. {Style.RESET_ALL}')
@@ -194,8 +196,9 @@ class ROSHandler:
                 # cropped images
                 for idx,point_2d in enumerate(points_2d):
                     image[point_2d[0][1]-thickness:point_2d[0][1]+thickness,point_2d[0][0]-thickness:point_2d[0][0]+thickness]=color
-                    #image = cv2.rectangle(image, bbox_2d[idx][0][0], bbox_2d[idx][1][0], color, thickness)
-                    cropped_image = image[bbox_2d[idx][1][0][1]:bbox_2d[idx][0][0][1],bbox_2d[idx][0][0][0]:bbox_2d[idx][1][0][0]]
+                    width = bbox_2d[idx][1][0][0] - bbox_2d[idx][0][0][0]
+                    height = bbox_2d[idx][0][0][1] - bbox_2d[idx][1][0][1]
+                    cropped_image = image[round(point_2d[0][1]-height/2):round(point_2d[0][1]+height/2),round(point_2d[0][0]-width/2):round(point_2d[0][0]+width/2)]
                     if cropped_image.shape[0] == 0 and cropped_image.shape[1] == 0:
                         print(f'{Fore.RED}Skipping Image due to inappropriate width/height. {Style.RESET_ALL}')
                         continue                       
