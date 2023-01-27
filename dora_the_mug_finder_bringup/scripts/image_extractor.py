@@ -23,7 +23,7 @@ from sensor_msgs.msg import Image
 
 # Own package imports
 from dora_the_mug_finder_msg.msg import Object , Images
-from image_processer import get_matrix_inv, get_iou
+from dora_the_mug_finder_bringup.src.image_processing import get_matrix_inv, get_iou
 
 class ROSHandler:
 
@@ -83,7 +83,6 @@ class ROSHandler:
                     width = bbox_2d[idx][1][0][0] - bbox_2d[idx][0][0][0]
                     height = bbox_2d[idx][0][0][1] - bbox_2d[idx][1][0][1]
                     cropped_image = image[round(point_2d[0][1]-height/2):round(point_2d[0][1]+height/2),round(point_2d[0][0]-width/2):round(point_2d[0][0]+width/2)]
-                    print(cropped_image)
                     if cropped_image.shape[0] == 0 or cropped_image.shape[1] == 0:
                         print(f'{Fore.RED}Skipping Image due to inappropriate width/height. {Style.RESET_ALL}')
                         continue 
@@ -144,8 +143,8 @@ class ROSHandler:
 
                 # Scale the points to image pixels
                 points_2d = np.round(points_2d).astype(int)
-                bbox_2d = abs(np.round(bbox_2d).astype(int))
-
+                bbox_2d = np.round(bbox_2d).astype(int)
+  
                 # Blue color in BGR
                 color = (0, 251, 255)
             
@@ -174,23 +173,18 @@ class ROSHandler:
                     continue
                 
                 # check IOU bbox
-                try:
-                    iou_overlap = False
-                    for idx1 , bbox in enumerate(bbox_2d,start=1):
-                        bb1_2d = bbox
-                        for idx2 , bbox in enumerate(bbox_2d,start=1):
-                            bb2_2d = bbox
-                            iou_small = get_iou(bb1_2d,bb2_2d)
-                            if idx1 != idx2:
-                                print('img:' + str(idx1) + ' with img:' + str(idx2) + ' iou:'+ str(iou_small))
-                                if iou_small > 1.1:
-                                    iou_overlap = True
-                                if iou_small == 1.1:
-                                    iou_overlap = True
-                    print(iou_overlap)
-                    if iou_overlap:
-                        continue
-                except:
+                iou_overlap = False
+                for idx1 , bbox in enumerate(bbox_2d,start=1):
+                    bb1_2d = bbox
+                    for idx2 , bbox in enumerate(bbox_2d,start=1):
+                        bb2_2d = bbox
+                        iou_small = get_iou(bb1_2d,bb2_2d)
+                        if idx1 != idx2:
+                            if iou_small > 1.1:
+                                iou_overlap = True
+                            if iou_small == 1.1:
+                                iou_overlap = True
+                if iou_overlap:
                     continue
                         
                 # cropped images
@@ -204,7 +198,7 @@ class ROSHandler:
                         continue                       
                     self.cropped_images.images.append(self.bridge.cv2_to_imgmsg(cropped_image, "passthrough"))
                 
-                
+                print(image_number)
                 break
                 
         self.pub.publish(self.cropped_images)
