@@ -41,6 +41,9 @@ class ROSHandler:
     def callback(self,data):
         files_path=f'{os.environ["DORA"]}'
 
+        # Scene images
+        filenames = sorted(glob.glob(files_path + f'/rgbd-scenes-v2/imgs/{data.scene.data}/*-color.png'))
+        
         if data.scene.data == 'kinect':
             # Camera parameters
             with open(f'{files_path}/rosbag/intrinsic.yaml', "r") as yamlfile:
@@ -86,9 +89,7 @@ class ROSHandler:
                     self.cropped_images.images.append(self.bridge.cv2_to_imgmsg(cropped_image, "passthrough"))
         
         else:
-            # Scene images
-            filenames = sorted(glob.glob(files_path + f'/rgbd-scenes-v2/imgs/{data.scene.data}/*-color.png'))
-        
+            
             # Pose dataset paths
             scene_number = data.scene.data.split('_')  
             filename_pose = (files_path + f'/rgbd-scenes-v2/pc/{scene_number[1]}.pose')
@@ -97,20 +98,20 @@ class ROSHandler:
             center = [320 , 240]
             focal_length = 570.3
 
-            camera_matrix = np.array([[focal_length, 0,            center[0]],
-                        [0,            focal_length, center[1]],
-                        [0,            0,            1]])
 
-            points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
-            bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
-                
             for filename in filenames:
 
                 image_number = filename.split('/')[-1].split('-')[0]
               
+                camera_matrix = np.array([[focal_length, 0,            center[0]],
+                                        [0,            focal_length, center[1]],
+                                        [0,            0,            1]])
+
                 ########################################
                 # Points & Bbox 3D                     #
                 ########################################
+                points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
+                bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
                 
                 # Apply matriz inverse: points, bbox_3d 
                 self.get_matrix_inv(filename_pose,image_number)
