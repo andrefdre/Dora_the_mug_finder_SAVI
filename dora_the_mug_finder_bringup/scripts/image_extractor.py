@@ -161,11 +161,9 @@ class ROSHandler:
                     image[point_2d[0][1]-thickness:point_2d[0][1]+thickness,point_2d[0][0]-thickness:point_2d[0][0]+thickness]=color
                     #image = cv2.rectangle(image, bbox_2d[idx][0][0], bbox_2d[idx][1][0], color, thickness)
                     cropped_image = image[bbox_2d[idx][1][0][1]:bbox_2d[idx][0][0][1],bbox_2d[idx][0][0][0]:bbox_2d[idx][1][0][0]]
-                    #print(cropped_image)
                     if cropped_image.shape[0] == 0 and cropped_image.shape[1] == 0:
                         print(f'{Fore.RED}Skipping Image due to inappropriate width/height. {Style.RESET_ALL}')
-                        continue 
-                                            
+                        continue                       
                     self.cropped_images.images.append(self.bridge.cv2_to_imgmsg(cropped_image, "passthrough"))
                 
                 
