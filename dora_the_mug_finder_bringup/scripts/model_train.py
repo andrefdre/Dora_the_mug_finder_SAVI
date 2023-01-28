@@ -40,7 +40,7 @@ def main():
                         help='Batch size')
     parser.add_argument('-c', '--cuda', default=0, type=int,
                         help='Number of cuda device')
-    parser.add_argument('-loss', '--loss_threshold', default=0.00001, type=float,
+    parser.add_argument('-loss', '--loss_threshold', default=0.01, type=float,
                         help='Loss threshold criteria for when to stop')
     parser.add_argument('-lr', '--learning_rate', default=0.01, type=float,
                         help='Learning rate')
@@ -75,7 +75,7 @@ def main():
     learning_rate = args['learning_rate']
     maximum_num_epochs = args['max_epoch'] 
     termination_loss_threshold =  args['loss_threshold']
-    loss_function = torch.nn.NLLLoss()
+    loss_function = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     ########################################
@@ -83,7 +83,7 @@ def main():
     ########################################
 
     # Sample ony a few images for develop
-    #image_filenames = random.sample(image_filenames,k=10000)
+    image_filenames = random.sample(image_filenames,k=700)
     train_image_filenames,test_image_filenames = train_test_split(image_filenames,test_size=0.2)
 
     # Creates the train dataset
@@ -112,7 +112,6 @@ def main():
                 ax.yaxis.set_ticks([])
                 label_list=label_t.tolist()
                 label =class_list[label_list[image_idx]]
-                print(label)
                 ax.set_xlabel(label)
                 plt.imshow(image)
 
@@ -137,6 +136,8 @@ def main():
             model.load_state_dict(checkpoint['model_state_dict'])
             model.to(device) # move the model variable to the gpu if one exists
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            loader_train = checkpoint['loader_train']
+            loader_test = checkpoint['loader_test']
             idx_epoch = checkpoint['epoch']
             epoch_train_losses = checkpoint['train_losses']
             stored_train_loss=epoch_train_losses[-1]
@@ -166,8 +167,7 @@ def main():
             label_t_predicted = model.forward(image_t)
  
             # Compute the error based on the predictions
-            m = torch.nn.LogSoftmax(dim=1)
-            loss = loss_function(m(label_t_predicted), label_t)
+            loss = loss_function(label_t_predicted, label_t)
 
             # Update the model, i.e. the neural network's weights 
             optimizer.zero_grad() # resets the weights to make sure we are not accumulating
@@ -193,8 +193,7 @@ def main():
             label_t_predicted = model.forward(image_t)
 
             # Compute the error based on the predictions
-            m = torch.nn.LogSoftmax(dim=1)
-            loss = loss_function(m(label_t_predicted), label_t)
+            loss = loss_function(label_t_predicted, label_t)
 
             test_losses.append(loss.data.item())
 
@@ -223,7 +222,7 @@ def main():
             print(Fore.CYAN + 'Finished training. Reached maximum number of epochs. Comparing to previously stored model' + Style.RESET_ALL)
             if epoch_train_loss < stored_train_loss:
                 print(Fore.BLUE + 'Saving model at Epoch ' + str(idx_epoch) + ' Loss ' + str(epoch_train_loss) + Style.RESET_ALL)
-                SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,model_path,device) # Saves the model
+                SaveModel(model,idx_epoch,optimizer,loader_train,loader_test,epoch_train_losses,epoch_test_losses,model_path,device) # Saves the model
                 SaveGraph(epoch_train_losses,epoch_test_losses,folder_path)
             else:
                 print(Fore.BLUE + 'Not saved, current loos '+ str(epoch_train_loss) + '. Previous model is better, previous loss ' + str(stored_train_loss) + '.' + Style.RESET_ALL)
@@ -232,7 +231,7 @@ def main():
             print(Fore.CYAN + 'Finished training. Reached target loss. Comparing to previously stored model' + Style.RESET_ALL)
             if epoch_train_loss < stored_train_loss:
                 print(Fore.BLUE + 'Saving model at Epoch ' + str(idx_epoch) + ' Loss ' + str(epoch_train_loss) + Style.RESET_ALL)
-                SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,model_path,device) # Saves the model
+                SaveModel(model,idx_epoch,optimizer,loader_train,loader_test,epoch_train_losses,epoch_test_losses,model_path,device) # Saves the model
                 SaveGraph(epoch_train_losses,epoch_test_losses,folder_path)
             else:
                 print(Fore.BLUE + 'Not saved, current loos '+ str(epoch_train_loss) + '. Previous model is better, previous loss ' + str(stored_train_loss) + '.' + Style.RESET_ALL)
@@ -246,7 +245,7 @@ def main():
             if epoch_train_loss < stored_train_loss: # checks if the previous model is better than the new one
                 print(Fore.BLUE + 'Saving model at Epoch ' + str(idx_epoch) + ' Loss ' + str(epoch_train_loss) + Style.RESET_ALL)
                 # Save checkpoint
-                SaveModel(model,idx_epoch,optimizer,epoch_train_losses,epoch_test_losses,model_path,device) # Saves the model
+                SaveModel(model,idx_epoch,optimizer,loader_train,loader_test,epoch_train_losses,epoch_test_losses,model_path,device) # Saves the model
                 SaveGraph(epoch_train_losses,epoch_test_losses,folder_path)
                 stored_train_loss=epoch_train_loss
                 

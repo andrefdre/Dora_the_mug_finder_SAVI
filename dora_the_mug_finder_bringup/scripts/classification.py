@@ -9,14 +9,15 @@ from torchvision import transforms
 import matplotlib.pyplot as plt
 import torch
 from PIL import Image
-from cv_bridge import CvBridge, CvBridgeError
+from cv_bridge import CvBridge
 import rospy
 from std_msgs.msg import String
-from colorama import Fore, Style
+import numpy as np
 
 # Own package imports
-from dora_the_mug_finder_msg.msg import Object , Images , Classes
+from dora_the_mug_finder_msg.msg import Images , Classes
 from dora_the_mug_finder_bringup.src.model import Model
+from dora_the_mug_finder_bringup.src.dataset import Dataset
 from dora_the_mug_finder_bringup.src.utils import LoadModel,GetClassListFromFolder
 
 
@@ -28,8 +29,8 @@ class ImageClassifier:
         self.images = []
         self.bridge = CvBridge()
         self.class_list= GetClassListFromFolder()
+        self.dataset = Dataset(self.images)
         self.PIL_to_Tensor = transforms.Compose([
-                            transforms.Resize((64,64)),
                             transforms.ToTensor()
                             ])
 
@@ -47,19 +48,27 @@ class ImageClassifier:
             self.images.append(self.bridge.imgmsg_to_cv2(image, "passthrough"))
 
         self.classification=Classes()
+        self.images_to_draw = []
         for image_cv2 in self.images:
+            # Convert the image to a PIL image
             image_pill = Image.fromarray(image_cv2)
-            #image_pill = Image.open(image_filename)
-        
-            
-            image_t= self.PIL_to_Tensor(image_pill)
-            image_t = image_t[0:3]
-            
+            # Resize the image without changing the aspect ratio
+            image_pill.thumbnail((64,64))
+            # Convert the image to a numpy array
+            image_array = np.asarray(image_pill)
+            # Pad the image to 64x64
+            image_padded=self.dataset.expand2square(image_array)
+            # Add the image to the list of images to draw
+            self.images_to_draw.append(image_padded)
+            # Convert the image to a tensor
+            image_t= self.PIL_to_Tensor(image_padded)
+            # Add a dimension to the tensor
             image_t = image_t.unsqueeze(0)
-
+            # Move the image to the device
             image_t = image_t.to(self.device)
-
-            output = self.model(image_t)
+            # Get the prediction
+            output = self.model.forward(image_t)
+            # Get the class with the highest probability
             prediction = torch.argmax(output)
             self.classification.classes.append(String(self.class_list[prediction.data.item()]))
         
@@ -78,7 +87,7 @@ class ImageClassifier:
         
             label=self.classification.classes[image_idx].data
 
-            image_pil = Image.fromarray(self.images[image_idx])
+            image_pil = self.images_to_draw[image_idx]
 
             ax = self.figure.figure.add_subplot(2,5,plot_idx) # define a 5 x 5 subplot matrix
             plt.imshow(image_pil)
