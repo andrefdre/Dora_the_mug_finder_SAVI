@@ -194,9 +194,11 @@ def main():
     rospy.init_node('objects', anonymous=False)
     rate = rospy.Rate(10) # 10hz
 
+
     ############################################
     # Visualizer Initialization                #
     ############################################
+
     vis = o3d.visualization.VisualizerWithKeyCallback()
     visualizer = Visualize(vis)
     vis.register_key_callback(32, visualizer.space_callback)
@@ -283,15 +285,16 @@ def main():
             # objects
             cluster_idxs = list(point_cloud_objects_noise.cluster_dbscan(eps=eps, min_points=100, print_progress=False))
             object_idxs = list(set(cluster_idxs))
-            if object_idxs[:] == -1:
+            
+            if -1 in object_idxs:
                 object_idxs.remove(-1) #Removes -1 cluster ID (-1 are the points not clustered)
-
+            
             objects = []    #Create the objects list
             threshold_z = 0
             threshold_dist = 0.7
             threshold_width = 0.35
             threshold_length = 0.35
-            threshold_height = 0.35
+            threshold_height = 0.4
             #Here we find the points for each object and reunite them 
             for object_idx in object_idxs:
 
@@ -318,7 +321,7 @@ def main():
                 if d['z'] > threshold_z and dist < threshold_dist and d['width'] < threshold_width and d['length'] < threshold_length and d['height'] < threshold_height:       
                     # condition of being object: Z center > 0, be close to the reference, not be too big
                     objects.append(d) #Add the dict of this object to the list
-
+                #print(objects)
 
             #####################################
             # BBox extraction                   #
