@@ -158,17 +158,11 @@ pip install -r /full/path/to/Dora_the_mug_finder_SAVI/requirements.txt
 ## Usage
 
 To Train the model, run the code:
-
 ```
 rosrun dora_the_mug_finder_bringup model_train.py -fn <folder_name> -mn <model_name> -n_epochs 50 -batch_size 256 -c 0
 ```
 
 Where the *<folder_name>* and *<model_name>*  should be replaced by the names you want to give. 
-
-If instead of using point clouds from the dataset, you want to use point clouds acquired from a Kinect stored in a rosbag, before running the detector just run:
-```
-roslaunch dora_the_mug_finder_bringup bringup_bag.launch 
-```
 
 To run the detector with previous trained model run the code:
 ```
@@ -180,9 +174,22 @@ If you want to visualize extracted images run:
 roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> visualize:=True
 ```
 Where the <folder_name> and <model_name> should be replaced by a name for the model previously set while training. 
+
+It's possible to add the argument __*rqt_graph*__ to initialize RosGraph, setting it to true:
+```
+roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> rqt_graph:=true
+```
+
+If instead of using point clouds from the dataset, you want to use point clouds acquired from a Kinect stored in a rosbag, just add the argument __*bag*__:
+```
+roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> bag:=true
+```
+
+It's also possible to initialize RViz to see the bag file, adding the argument __*rviz*__:
+```
+roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> bag:=true rviz:=true
+```
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
 
 <!-- CONTRIBUTING -->
 ## Contributing
