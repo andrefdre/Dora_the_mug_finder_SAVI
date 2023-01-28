@@ -168,31 +168,31 @@ Where the *<folder_name>* and *<model_name>*  should be replaced by the names yo
 
 To run the detector with previous trained model run the code:
 ```
-roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name>
+roslaunch dora_the_mug_finder_bringup dora_bringup.launch mn:=<model_name> fn:=<folder_name>
 ```
 
 If you want to visualize extracted images run:
 ```
-roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> visualize:=True
+roslaunch dora_the_mug_finder_bringup dora_bringup.launch mn:=<model_name> fn:=<folder_name> visualize:=True
 ```
 Where the <folder_name> and <model_name> should be replaced by a name for the model previously set while training. 
 
 It's possible to add the argument __*rqt_graph*__ to initialize RosGraph, setting it to true:
 ```
-roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> rqt_graph:=true
+roslaunch dora_the_mug_finder_bringup dora_bringup.launch mn:=<model_name> fn:=<folder_name> rqt_graph:=true
 ```
 It's also possible to use a kinect camera for processing in real time, by adding the __*kinect*__ argument:
 ```
-roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> kinect:=true
+roslaunch dora_the_mug_finder_bringup dora_bringup.launch mn:=<model_name> fn:=<folder_name> kinect:=true
 ```
 If instead of using point clouds from the dataset, you want to use point clouds acquired from a Kinect stored in a rosbag, just add the argument __*bag*__:
 ```
-roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> kinect:=true bag:=true
+roslaunch dora_the_mug_finder_bringup dora_bringup.launch mn:=<model_name> fn:=<folder_name> kinect:=true bag:=true
 ```
 
 To initialize RViz to see the bag file, add the argument __*rviz*__:
 ```
-roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> bag:=true rviz:=true
+roslaunch dora_the_mug_finder_bringup dora_bringup.launch mn:=<model_name> fn:=<folder_name> bag:=true rviz:=true
 ```
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
