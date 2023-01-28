@@ -19,8 +19,16 @@
     </group>
 
     <!-- Object Classification -->
-    <node pkg="dora_the_mug_finder_bringup" name="classification" type="classification.py" output="screen"
-    args="-fn $(arg fn) -mn $(arg mn)"/>
+    <group unless="$(arg visualize)">
+        <node pkg="dora_the_mug_finder_bringup" name="classification" type="classification.py" output="screen"
+        args="-fn $(arg fn) -mn $(arg mn)"/>
+    </group>
+
+    <group if="$(arg visualize)">
+        <node pkg="dora_the_mug_finder_bringup" name="classification" type="classification.py" output="screen"
+        args="-fn $(arg fn) -mn $(arg mn) -v"/>
+    </group>
+
 
 
 </launch>
