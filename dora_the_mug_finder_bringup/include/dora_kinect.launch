@@ -1,0 +1,9 @@
+<launch>    
+        <!-- Launch openni and defines the name as camera-->    
+    <arg name="frame_id" default="camera"/>
+
+    <include file="$(find openni_launch)/launch/openni.launch">
+        <arg name="load_driver" value="false"/>
+        <arg name="camera" value="$(arg frame_id)"/>
+    </include>
+</launch>

@@ -6,7 +6,7 @@ import rospy
 from gtts import gTTS
 from time import sleep
 from dora_the_mug_finder_msg.msg import Object
-
+  
 
 def msgReceivedCallback(data):
 
@@ -40,10 +40,11 @@ def msgReceivedCallback(data):
 
         else: 
             pass
+        #! Uncomment this after implementation of color message
             # text = text + ' and it is ' + str(object_idx_color) + ' .'
         
         # Start Google TextToSpeech with the generated text with the voice with indian accent
-        tts = gTTS(text=text, lang='en',  tld='co.in')
+        tts = gTTS(text=text, lang='es',  tld='com.mx')
         
         # Create a temporary audio file with our text
         filename = '/tmp/temp.mp3'

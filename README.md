@@ -179,13 +179,16 @@ It's possible to add the argument __*rqt_graph*__ to initialize RosGraph, settin
 ```
 roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> rqt_graph:=true
 ```
-
+It's also possible to use a kinect camera for processing in real time, by adding the __*kinect*__ argument:
+```
+roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> kinect:=true
+```
 If instead of using point clouds from the dataset, you want to use point clouds acquired from a Kinect stored in a rosbag, just add the argument __*bag*__:
 ```
-roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> bag:=true
+roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> kinect:=true bag:=true
 ```
 
-It's also possible to initialize RViz to see the bag file, adding the argument __*rviz*__:
+To initialize RViz to see the bag file, add the argument __*rviz*__:
 ```
 roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> bag:=true rviz:=true
 ```
