@@ -33,7 +33,7 @@ def main():
     #################################
     files_path=f'{os.environ["DORA"]}'
 
-    filenames = glob.glob(files_path + '/rgbd-scenes-v2/imgs/*/00000-color.png')
+    filenames = sorted(glob.glob(files_path + '/rgbd-scenes-v2/imgs/*/00000-color.png'))
     
     rospack = rospkg.RosPack()
     path = rospack.get_path('dora_the_mug_finder_bringup')
