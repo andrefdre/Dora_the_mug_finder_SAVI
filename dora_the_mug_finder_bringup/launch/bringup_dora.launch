@@ -1,26 +1,65 @@
 <launch>
-<arg name="mn" doc="Model name"/> <!-- Name of the model to load -->
-<arg name="fn" doc="Folder name"/>     <!-- Name of the folder to save images to -->
-<arg name="visualize" doc="Visualize extracted images" default="False"/>          <!-- Should information about the detected mugs be displayed -->
-<!-- User interface -->
-<node pkg="dora_the_mug_finder_bringup" name="user_interface" type="user_interface.py" output="screen"/> <!-- User interface node -->
 
-<!-- Object extraction -->
-<node pkg="dora_the_mug_finder_bringup" name="retieve_objects" type="retrieve_objects.py" output="screen" args="-v"/> <!-- The node that extracts mugs from the scene -->
+    <arg name="mn" doc="Model name"/> <!-- Name of the model to load -->
+    <arg name="fn" doc="Folder name"/>     <!-- Name of the folder to save images to -->
+    <arg name="visualize" doc="Visualize extracted images" default="False"/>          <!-- Should information about the detected mugs be displayed -->
+    <arg name="bag" default="false" doc="Use a recorded Kinect bagfile in loop"/>
+    <arg name="rviz" default="false" doc="Initialize RViz to see bagfile"/>
+    <arg name="rqt_graph" default="false" doc="Initialize rqt_graph for node and topics visualization"/>
+    
+    
+    <group if="$(arg bag)">
+         <!-- Launch openni and defines the name as camera-->    
+        <arg name="frame_id" default="camera"/>
 
-<!-- Image extraction --> <!-- Extracts images of the located mugs -->
-<group unless="$(arg visualize)"> <!-- If the visualization argument is false -->
-<node pkg="dora_the_mug_finder_bringup" name="image_extractor" type="image_extractor.py" output="screen"/> <!-- The image extractor node -->
-</group>
+        <include file="$(find openni_launch)/launch/openni.launch">
+            <arg name="load_driver" value="false"/>
+            <arg name="camera" value="$(arg frame_id)"/>
+        </include>
 
-<group if="$(arg visualize)"> <!-- If the visualization argument is true -->
-<node pkg="dora_the_mug_finder_bringup" name="image_extractor" type="image_extractor.py" output="screen"
-args="-v"/> <!-- The image extractor node -->
-</group>
+        <!-- Use bagfile time -->
+        <param name="/use_sim_time" value="false"/>
+        
+        <!-- Read bagfile in loop -->
+        <arg name="bag_file_name" value="kinect_complete"/>
+        <node pkg="rosbag" type="play" name="rosbag_play" args="--clock -l $(env DORA)/rosbag/$(arg bag_file_name).bag"/>
 
-<!-- Object Classification -->
-<node pkg="dora_the_mug_finder_bringup" name="classification" type="classification.py" output="screen"
-args="-fn $(arg fn) -mn $(arg mn)"/> <!-- The node that classifies the extracted images -->
+        <group if="$(arg rviz)">
+            <!-- Launch rviz with correct configuration file -->
+            <node name="rviz" pkg="rviz" type="rviz" args="-d $(find dora_the_mug_finder_bringup)/config/kinect.rviz" required="false"/>
+        </group>
+    </group>
+
+
+    <group if="$(arg rqt_graph)">
+         <!-- Launch rqt_graph for node visualization -->
+        <node name="rqt_graph" pkg="rqt_graph" type="rqt_graph"/>
+    </group>
+
+
+    <!-- User interface -->
+    <node pkg="dora_the_mug_finder_bringup" name="user_interface" type="user_interface.py" output="screen"/> <!-- User interface node -->
+
+
+    <!-- Object extraction -->
+    <node pkg="dora_the_mug_finder_bringup" name="retieve_objects" type="retrieve_objects.py" output="screen" args="-v"/> <!-- The node that extracts mugs from the scene -->
+
+
+    <!-- Image extraction --> <!-- Extracts images of the located mugs -->
+    <group unless="$(arg visualize)"> <!-- If the visualization argument is false -->
+        <node pkg="dora_the_mug_finder_bringup" name="image_extractor" type="image_extractor.py" output="screen"/> <!-- The image extractor node -->
+    </group>
+
+
+    <group if="$(arg visualize)"> <!-- If the visualization argument is true -->
+        <node pkg="dora_the_mug_finder_bringup" name="image_extractor" type="image_extractor.py" output="screen"
+        args="-v"/> <!-- The image extractor node -->
+    </group>
+
+
+    <!-- Object Classification -->
+    <node pkg="dora_the_mug_finder_bringup" name="classification" type="classification.py" output="screen"
+    args="-fn $(arg fn) -mn $(arg mn)"/> <!-- The node that classifies the extracted images -->
 
 
 </launch>
