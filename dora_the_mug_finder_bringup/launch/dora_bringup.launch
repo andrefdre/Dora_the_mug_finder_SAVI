@@ -2,6 +2,7 @@
 
     <arg name="mn" doc="Model name"/> <!-- Name of the model to load -->
     <arg name="fn" doc="Folder name"/>     <!-- Name of the folder to save images to -->
+    <arg name="visualize_extracted" doc="Visualize extracted images" default="False"/>          <!-- Should information about the detected mugs be displayed -->
     <arg name="visualize" doc="Visualize extracted images" default="False"/>          <!-- Should information about the detected mugs be displayed -->
     <arg name="kinect" default="false" doc="Use kinect image"/>
     <arg name="rqt_graph" default="false" doc="Initialize rqt_graph for node and topics visualization"/>
@@ -38,12 +39,12 @@
 
 
     <!-- Image extraction --> <!-- Extracts images of the located mugs -->
-    <group unless="$(arg visualize)"> <!-- If the visualization argument is false -->
+    <group unless="$(arg visualize_extracted)"> <!-- If the visualization argument is false -->
         <node pkg="dora_the_mug_finder_bringup" name="image_extractor" type="image_extractor.py" output="screen"/> <!-- The image extractor node -->
     </group>
 
 
-    <group if="$(arg visualize)"> <!-- If the visualization argument is true -->
+    <group if="$(arg visualize_extracted)"> <!-- If the visualization argument is true -->
         <node pkg="dora_the_mug_finder_bringup" name="image_extractor" type="image_extractor.py" output="screen"
         args="-v"/> <!-- The image extractor node -->
     </group>

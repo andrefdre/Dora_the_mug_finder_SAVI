@@ -17,6 +17,7 @@ import os
 import cv2
 import yaml
 import argparse
+import sys
 
 from sensor_msgs.msg import Image
 
