@@ -85,7 +85,7 @@
 <img  src="Docs/logo.svg" alt="Logo" width="400">
 </div>
 
-This project was developed for Advanced Vision Systems class for the second report. The objective is to detect and extract objects from a point cloud and then pass it through a classifier that will tell what the object is and some information about it's physical characteristics, for example it's a Mug and has a certain bounding box.  
+This project was developed for Advanced Industrial Vision Systems class for the second report. The objective is to detect and extract objects from a point cloud and then pass it through a classifier that will tell what the object is and some information about it's physical characteristics. For example, it's a Mug and has a certain bounding box.  
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -109,24 +109,26 @@ This project was developed for Advanced Vision Systems class for the second repo
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This project uses ROS to aid the use of the kinect camera and the object classification CNN is built based on pytorch. To do object detection we use open3D.
+This project uses [ROS Noetic](http://wiki.ros.org/ROS/Installation) to aid the use of the kinect camera and the object classification CNN is built based on [PyTorch](https://pytorch.org/). To do object detection is used [Open3D](http://www.open3d.org/).
 
 ### Prerequisites
 
-To use this code first add the next line in the bashrc:
+To use this code, first add the next line in the bashrc or your shell configuration file:
 
   ```
 #Dora The Mug FInder
 export DORA=/home/andre/dora_the_mug_finder
 export PYTHONPATH="$PYTHONPATH:${HOME}/catkin_ws/src/Dora_the_mug_finder_SAVI"
   ```
-Replace the path of DORA to where all the datasets are store in your computer.
-Afterward compile the bashrc using:
+Replace the path of DORA to where all the datasets are stored in your computer. You can download them [here](rgbd-dataset.cs.washington.edu/dataset/rgbd-scenes-v2/0).
+
+Afterward, update the shell with the new configuration using:
 ```
 source ~/.bashrc
 ```
+If you use zsh, just change to *.zshrc*.
 
-Inside DORA folder should be a structure similar to:
+Inside DORA folder, there should be a structure similar to:
   - models
   - rgbd-dataset
   - rgbd-scenes-v2
@@ -137,31 +139,32 @@ Inside DORA folder should be a structure similar to:
 
 
 ### Installation
-To install this package clone the repository inside the src folder of your catkinws running the code:
+To install the project, clone the repository inside the *src* folder of your *catkin_ws*, running the following lines:
 ```
 git clone https://github.com/andrefdre/Dora_the_mug_finder_SAVI.git
 cd ..
 catkin_make
 ```
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+To install all the dependencies of this package, just run in your terminal:
+```
+pip install -r /full/path/to/Dora_the_mug_finder_SAVI/requirements.txt
+```
+
+If you have/want to use a Kinect camera with this project, you can find [here](https://github.com/AutoMecUA/AutoMec-AD/wiki/Users'-guide-to-Software#rgb-camera) how to install all the dependencies needed.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-To Train the model run the code:
-
+To Train the model, run the code:
 ```
 rosrun dora_the_mug_finder_bringup model_train.py -fn <folder_name> -mn <model_name> -n_epochs 50 -batch_size 256 -c 0
 ```
 
-Where the <folder_name> and <model_name> should be replaced by a name for the model. 
-
-If instead of using point clouds from the dataset want to use point clouds acquired from a Kinect stored in a rosbag run, before running the detector:
-```
-roslaunch dora_the_mug_finder_bringup bringup_bag.launch 
-```
+Where the *<folder_name>* and *<model_name>*  should be replaced by the names you want to give. 
 
 To run the detector with previous trained model run the code:
 ```
@@ -173,9 +176,25 @@ If you want to visualize extracted images run:
 roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> visualize:=True
 ```
 Where the <folder_name> and <model_name> should be replaced by a name for the model previously set while training. 
+
+It's possible to add the argument __*rqt_graph*__ to initialize RosGraph, setting it to true:
+```
+roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> rqt_graph:=true
+```
+It's also possible to use a kinect camera for processing in real time, by adding the __*kinect*__ argument:
+```
+roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> kinect:=true
+```
+If instead of using point clouds from the dataset, you want to use point clouds acquired from a Kinect stored in a rosbag, just add the argument __*bag*__:
+```
+roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> kinect:=true bag:=true
+```
+
+To initialize RViz to see the bag file, add the argument __*rviz*__:
+```
+roslaunch dora_the_mug_finder_bringup bringup_dora.launch mn:=<model_name> fn:=<folder_name> bag:=true rviz:=true
+```
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
 
 <!-- CONTRIBUTING -->
 ## Contributing

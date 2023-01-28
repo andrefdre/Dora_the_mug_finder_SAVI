@@ -4,8 +4,6 @@ import numpy as np
 import torch
 from PIL import Image
 from torchvision import transforms
-import glob
-import os
 from dora_the_mug_finder_bringup.src.utils import GetClassListFromFolder
 
 class Dataset(torch.utils.data.Dataset):

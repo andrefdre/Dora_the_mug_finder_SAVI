@@ -2,3 +2,10 @@ more-itertools
 open3d
 numpy
 opencv-python
+pyglet
+colorama
+gTTS
+matplotlib
+Pillow
+tqdm
+more_itertools
