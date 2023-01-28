@@ -151,6 +151,8 @@ To install all the dependencies of this package, just run in your terminal:
 pip install -r /full/path/to/Dora_the_mug_finder_SAVI/requirements.txt
 ```
 
+If you have/want to use a Kinect camera with this project, you can find [here](https://github.com/AutoMecUA/AutoMec-AD/wiki/Users'-guide-to-Software#rgb-camera) how to install all the dependencies needed.
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
