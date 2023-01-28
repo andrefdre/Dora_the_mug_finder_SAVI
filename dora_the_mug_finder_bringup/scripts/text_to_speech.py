@@ -39,7 +39,8 @@ def msgReceivedCallback(data):
             text = text + '. There is not information about the color.'
 
         else: 
-            text = text + ' and it is ' + str(object_idx_color) + ' .'
+            pass
+            # text = text + ' and it is ' + str(object_idx_color) + ' .'
         
         # Start Google TextToSpeech with the generated text with the voice with indian accent
         tts = gTTS(text=text, lang='en',  tld='co.in')
