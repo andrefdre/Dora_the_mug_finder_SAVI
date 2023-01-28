@@ -109,7 +109,7 @@ class Dataset(torch.utils.data.Dataset):
 
         #image_padded.setflags(write=1)
 
-        image_t= self.transforms(image_padded)
+        image_t= self.transforms(np.array(image_padded))
 
         label = self.labels[index]
         
