@@ -7,20 +7,17 @@
 # --------------------------------------------------
 
 # General Imports 
-import threading
-import time
 from more_itertools import locate
 from colorama import Fore, Style
 from copy import deepcopy
 from math import sqrt
 import open3d as o3d
-import open3d.visualization.gui as gui
 import numpy as np
 import argparse
 import sys
 import os
 import rospy
-from std_msgs.msg import String
+from std_msgs.msg import String, Float64
 from sensor_msgs.msg import PointCloud2
 import sensor_msgs.point_cloud2 as pc2
 from ctypes import * # To convert float to uint32
@@ -28,8 +25,8 @@ from ctypes import * # To convert float to uint32
 
 # Oun Package imports
 from dora_the_mug_finder_msg.msg import Object , Point , Classes
-from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Transform
-from dora_the_mug_finder_bringup.src.utils import text_3d, get_color
+from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Geometric_Transformation
+from dora_the_mug_finder_bringup.src.object_processing import text_3d, get_object_color, get_object_dimension
 
 # Stores the view 
 view = {
@@ -201,7 +198,6 @@ def main():
     ############################################
     # Visualizer Initialization                #
     ############################################
-
     vis = o3d.visualization.VisualizerWithKeyCallback()
     visualizer = Visualize(vis)
     vis.register_key_callback(32, visualizer.space_callback)
@@ -219,6 +215,7 @@ def main():
         ########################################
         # Gets the scene number and nº objects #
         ########################################
+        
         if visualizer.flag_play:
             ####################################
             # Initialization of loop           #
@@ -228,6 +225,7 @@ def main():
             scene_name = ros_handler.scene_name
             eps=ros_handler.eps
             scene_number_objects = ros_handler.scene_number_objects
+            
             ########################################
             # Find two planes                      #
             ########################################
@@ -270,11 +268,11 @@ def main():
             tx, ty, tz = t.table.get_center()
             x, y, z = plane_table.a, plane_table.b, plane_table.c
             
-            plane_table.outlier_cloud = Transform(0,0,0,-tx,-ty,-tz).translate(plane_table.outlier_cloud)
-            t.table = Transform(0,0,0,-tx,-ty,-tz).translate(t.table)
+            plane_table.outlier_cloud = Geometric_Transformation(0,0,0,-tx,-ty,-tz).translate(plane_table.outlier_cloud)
+            t.table = Geometric_Transformation(0,0,0,-tx,-ty,-tz).translate(t.table)
             
-            plane_table.outlier_cloud = Transform(-x,-y,-z,0,0,0).rotate(plane_table.outlier_cloud)
-            t.table = Transform(-x,-y,-z,0,0,0).rotate(t.table)
+            plane_table.outlier_cloud = Geometric_Transformation(-x,-y,-z,0,0,0).rotate(plane_table.outlier_cloud)
+            t.table = Geometric_Transformation(-x,-y,-z,0,0,0).rotate(t.table)
             
             ########################################
             # Objects Detection                    #
@@ -310,28 +308,25 @@ def main():
                 d['idx'] = str(object_idx)
                 d['points'] = object_points
                 
-                #Properties of objects (length, width, height)
-                bbox_max = d['points'].get_max_bound()
-                bbox_min = d['points'].get_min_bound()
                 d['x'],d['y'],d['z'] = d['points'].get_center()
+                
+                #Properties of objects
                 dist = sqrt(d['x']**2 + d['y']**2)
-                d['length'] = abs(abs(bbox_max[0])-abs(bbox_min[0])) #axis x
-                d['width'] = abs(abs(bbox_max[1])-abs(bbox_min[1])) #axis y
-                d['height'] = abs(abs(bbox_max[2])-abs(bbox_min[2])) #axis z
+                height, width, length = get_object_dimension(d['points'])
 
-                # compute mean color of the object
+                #Compute mean color of the object
                 mean_color = [0,0,0]
                 for color_object in np.asarray(object_points.colors):
                     mean_color=mean_color+color_object
                 mean_color = mean_color/np.asarray(object_points.colors).shape[0]
                 d['mean_color']=mean_color
                 
-                # compute mean normal of the object
+                #Bounding box
                 d['bbox_obj'] = d['points'].get_axis_aligned_bounding_box()
                 d['bbox_to_draw'] = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(d['bbox_obj'])
 
-                if d['z'] > threshold_z and dist < threshold_dist and d['width'] < threshold_width and d['length'] < threshold_length and d['height'] < threshold_height:       
-                    # condition of being object: Z center > 0, be close to the reference, not be too big
+                #Add the object to the list if it meets the conditions: Z center > 0, be close to the reference, not be too big
+                if d['z'] > threshold_z and dist < threshold_dist and width < threshold_width and length < threshold_length and height < threshold_height:       
                     objects.append(d) #Add the dict of this object to the list
              
             #####################################
@@ -340,27 +335,43 @@ def main():
             entities = []
             objects_3d = Object()
             for object_idx, object in enumerate(objects):
-                object['points'] = Transform(-x,y,z,0,0,0).rotate(object['points'],inverse=True)
-                object['points'] = Transform(0,0,0,tx,ty,tz).translate(object['points'])
-                object['bbox_to_draw'] = Transform(-x,y,z,0,0,0).rotate(object['bbox_to_draw'],inverse=True)
-                bbox_to_draw = Transform(0,0,0,tx,ty,tz).translate(object['bbox_to_draw'])
+
+                object['points'] = Geometric_Transformation(-x,y,z,0,0,0).rotate(object['points'],inverse=True)
+                object['points'] = Geometric_Transformation(0,0,0,tx,ty,tz).translate(object['points'])
+                object['bbox_to_draw'] = Geometric_Transformation(-x,y,z,0,0,0).rotate(object['bbox_to_draw'],inverse=True)
+                bbox_to_draw = Geometric_Transformation(0,0,0,tx,ty,tz).translate(object['bbox_to_draw'])
                 
-                
-                color_object = get_color(object['mean_color'])
+                # Get object properties 
+                object['height'],object['width'],object['length'] = get_object_dimension(object['points'],multiplier=100)
+                color_object = get_object_color(object['mean_color'])
               
-                # Create ROS Message #
+                #####################################
+                # Create ROS Message                #
+                #####################################
                 # Gets the min and max of the bounding box
                 min = bbox_to_draw.get_min_bound() 
                 objects_3d.corners.append(Point(min[0],min[1],min[2]))
                 max = bbox_to_draw.get_max_bound()
                 objects_3d.corners.append(Point(max[0],max[1],max[2]))
+                
                 # Gets the center points
                 center = object['points'].get_center()
                 objects_3d.center.append(Point(center[0],center[1],center[2]))
+                
+                # Get the scene name
                 objects_3d.scene = String(scene_name)
+                
+                # Gets the object properties
                 objects_3d.color.append(String(color_object))
+                objects_3d.height.append(Float64(object['height']))
+                objects_3d.width.append(Float64(object['width']))
+                objects_3d.length.append(Float64(object['length']))
 
-                # Creates the entities to be drawn
+
+                #####################################
+                # Creates the entities to be drawn  #
+                #####################################
+
                 sphere =o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
                 sphere.paint_uniform_color([1.0, 0.75, 0.0])
                 sphere.translate(center)
@@ -371,8 +382,8 @@ def main():
                     if len(ros_handler.object_names) == len(objects):
                         text = f'{ros_handler.object_names[object_idx]}'
                         object_name = text_3d(text , font_size=7)
-                        object_name = Transform(-x,y,z,0,0,0).rotate(object_name,letter=True)
-                        object_name = Transform(0,0,0,center[0]-0.1,center[1]-0.2,center[2]).translate(object_name)
+                        object_name = Geometric_Transformation(-x,y,z,0,0,0).rotate(object_name,letter=True)
+                        object_name = Geometric_Transformation(0,0,0,center[0]-0.1,center[1]-0.2,center[2]).translate(object_name)
                         object_name.paint_uniform_color([1.0, 0.75, 0.0])
                         entities.append(object_name)
 
@@ -386,12 +397,12 @@ def main():
         if args['visualize'] and visualizer.flag_play: # Checks if the user wants to visualize the point cloud
             text = f'number of objects: {scene_number_objects}'
             text_number_objects = text_3d(text , font_size=20)
-            text_number_objects = Transform(-x,y,z,0,0,0).rotate(text_number_objects,letter=True)
-            text_number_objects = Transform(0,0,0,tx-1,ty-1.3,tz).translate(text_number_objects)
+            text_number_objects = Geometric_Transformation(-x,y,z,0,0,0).rotate(text_number_objects,letter=True)
+            text_number_objects = Geometric_Transformation(0,0,0,tx-1,ty-1.3,tz).translate(text_number_objects)
             entities.append(text_number_objects)
             entities.append(frame)
-            t.table = Transform(-x,y,z,0,0,0).rotate(t.table,inverse=True)
-            t.table = Transform(0,0,0,tx,ty,tz).translate(t.table)
+            t.table = Geometric_Transformation(-x,y,z,0,0,0).rotate(t.table,inverse=True)
+            t.table = Geometric_Transformation(0,0,0,tx,ty,tz).translate(t.table)
             entities.append(t.table)
             # Displays the entities
             vis.clear_geometries()
