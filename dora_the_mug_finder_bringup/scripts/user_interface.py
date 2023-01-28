@@ -57,7 +57,7 @@ def main():
     fourth_col = [[sg.Button("scene_10")] , [sg.Image(convToBytes(Image.open(filenames[9]),resize=(100,100)))] , [sg.Button("scene_11")] , [sg.Image(convToBytes(Image.open(filenames[10]),resize=(100,100)))] , [sg.Button("scene_12")] , [sg.Image(convToBytes(Image.open(filenames[11]),resize=(100,100)))]]
     fifth_col = [[sg.Button("scene_13")] , [sg.Image(convToBytes(Image.open(filenames[12]),resize=(100,100)))] , [sg.Button("scene_14")] , [sg.Image(convToBytes(Image.open(filenames[13]),resize=(100,100)))] , [sg.Button("Kinect")] , [sg.Image(convToBytes(Image.open(kinect_path),resize=(100,100)))] ]
     logo_col = [[sg.Text("Dora The Mug Finder")] , [sg.Image(convToBytes(Image.open(logo_path),resize=(300,300)))]]
-    layout = [[sg.Column(logo_col, element_justification='c') , sg.Column(first_col, element_justification='c'),sg.VSeperator(color='#505050'), sg.VSeperator(color='#505050'),sg.Column(second_col, element_justification='c'),sg.VSeperator(color='#505050'),sg.Column(third_col, element_justification='c'),
+    layout = [[sg.Column(logo_col, element_justification='c'),sg.VSeperator(color='#505050'),sg.VSeperator(color='#505050') , sg.Column(first_col, element_justification='c'),sg.VSeperator(color='#505050'),sg.Column(second_col, element_justification='c'),sg.VSeperator(color='#505050'),sg.Column(third_col, element_justification='c'),
                sg.VSeperator(color='#505050'),sg.Column(fourth_col, element_justification='c') , sg.VSeperator(color='#505050') , sg.Column(fifth_col, element_justification='c')]]
 
     # Create the window
