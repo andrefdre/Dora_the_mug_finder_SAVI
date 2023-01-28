@@ -23,7 +23,7 @@ from sensor_msgs.msg import Image
 
 # Own package imports
 from dora_the_mug_finder_msg.msg import Object , Images
-from dora_the_mug_finder_bringup.src.image_processing import get_matrix_inv, get_iou, get_color
+from dora_the_mug_finder_bringup.src.image_processing import get_matrix_inv, get_iou
 
 class ROSHandler:
 
@@ -211,8 +211,7 @@ class ROSHandler:
                     img_cropped = {}
                     img_cropped['idx_object'] = idx_object
                     img_cropped['image'] = cropped_image
-                    img_cropped['color'] = get_color(cropped_image,thickness=5)
-
+    
                     images_dic.append(img_cropped)
                     
                 idx_images_cropped = idx_images_overlap

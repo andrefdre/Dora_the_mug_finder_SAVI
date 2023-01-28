@@ -2,6 +2,7 @@ import torch
 import matplotlib.pyplot as plt
 import open3d as o3d
 import numpy as np
+import cv2
 import os
 import glob
 
@@ -70,3 +71,37 @@ def text_3d(text,density=10,font='/usr/share/fonts/truetype/freefont/FreeMono.tt
     pcd.points = o3d.utility.Vector3dVector(indices / 100.0 / density)
 
     return pcd
+
+
+def get_color(mean_color):
+    
+    mean_color = mean_color*255
+    # convert to hsv
+    rgb_value= np.array([[mean_color]], dtype=np.uint8)
+    print(rgb_value)
+    hsv = cv2.cvtColor(rgb_value, cv2.COLOR_RGB2HSV)
+    # get the hsv value
+    H,S,V = cv2.split(hsv)
+   
+
+    # get the color
+    if H < 10 and S > 50:
+        color = 'red'
+    elif H < 15 and S > 50:
+        color = 'orange'
+    elif H < 30 and S > 50:
+        color = 'yellow'
+    elif H < 75 and S > 50:
+        color = 'green'
+    elif H < 125 and S > 50:
+        color = 'blue'
+    elif H < 155 and S > 50:
+        color = 'purple'
+    elif H < 180 and S > 50:
+        color = 'red'
+    elif S <= 50 and V < 90:
+        color = 'black'
+    else:
+        color = 'white'
+
+    return color
