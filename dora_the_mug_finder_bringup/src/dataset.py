@@ -31,7 +31,7 @@ class Dataset(torch.utils.data.Dataset):
 
         # Create a set of transformations
         self.transforms = transforms.Compose([
-            transforms.Resize((64,64)),
+            #transforms.Resize((64,64)),
             transforms.ToTensor()
         ])
     
@@ -42,12 +42,62 @@ class Dataset(torch.utils.data.Dataset):
         part = parts[len(parts)-3]
         return part
 
+    def expand2square(self,img_array):
+        height, width , _ = img_array.shape
+        if width == height == 64:
+            return img_array
+        elif width<64 and height<64:
+            img_pill = np.zeros((64,64,3), np.uint8)
+            if height%2==0 and width%2==0:
+                img_pill[32-int(height/2):32+int(height/2),32-int(width/2):32+int(width/2)]=img_array
+            elif height%2==0 and width%2!=0:
+                img_pill[32-int(height/2):32+int(height/2),32-int(width/2):32+int(width/2)+1]=img_array
+            elif height%2!=0 and width%2==0:
+                img_pill[32-int(height/2):32+int(height/2)+1,32-int(width/2):32+int(width/2)]=img_array
+            else:
+                img_pill[32-int(height/2):32+int(height/2)+1,32-int(width/2):32+int(width/2)+1]=img_array
+            #img_pill[height:64,:,:] = 255
+            return img_pill
+        elif width > height:
+            img_pill = np.zeros((64,64,3), np.uint8)
+            if height%2==0:
+                img_pill[32-int(height/2):32+int(height/2),0:width]=img_array
+            else:
+                img_pill[32-int(height/2):32+int(height/2)+1,0:width]=img_array
+            
+            for i in range(0,32-int(height/2)):
+                img_pill[i,:,:]=img_pill[32-int(height/2),:,:]
+            for i in range(32+int(height/2),64):
+                img_pill[i,:,:]=img_pill[32+int(height/2),:,:]
+            return img_pill
+        else:
+            img_pill = np.zeros((64,64,3), np.uint8)
+
+            if width%2==0:
+                img_pill[0:height,32-int(width/2):32+int(width/2)]=img_array
+            else:
+                img_pill[0:height,32-int(width/2):32+int(width/2)+1]=img_array
+            
+            for i in range(0,32-int(width/2)):
+                img_pill[:,i,:]=img_pill[:,32-int(width/2),:]
+            for i in range(32+int(width/2),64):
+                img_pill[:,i,:]=img_pill[:,32+int(width/2),:]
+            return img_pill
+
 
     def __getitem__(self,index): # returns a specific x,y of the datasets
         # Get the image
         image_pill = Image.open(self.image_filenames[index])
 
-        image_t= self.transforms(image_pill)
+        image_pill.thumbnail((64,64))
+
+        image_array = np.asarray(image_pill)
+
+        image_padded=self.expand2square(image_array)
+
+        #image_padded.setflags(write=1)
+
+        image_t= self.transforms(image_padded)
 
         label = self.labels[index]
         
