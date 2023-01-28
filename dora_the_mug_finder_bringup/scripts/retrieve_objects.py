@@ -7,17 +7,20 @@
 # --------------------------------------------------
 
 # General Imports 
+import threading
+import time
 from more_itertools import locate
 from colorama import Fore, Style
 from copy import deepcopy
 from math import sqrt
 import open3d as o3d
+import open3d.visualization.gui as gui
 import numpy as np
 import argparse
 import sys
 import os
 import rospy
-from std_msgs.msg import String , Float64
+from std_msgs.msg import String
 from sensor_msgs.msg import PointCloud2
 import sensor_msgs.point_cloud2 as pc2
 from ctypes import * # To convert float to uint32
@@ -26,7 +29,7 @@ from ctypes import * # To convert float to uint32
 # Oun Package imports
 from dora_the_mug_finder_msg.msg import Object , Point , Classes
 from dora_the_mug_finder_bringup.src.table_detection import PlaneDetection, PlaneTable, Table, Transform
-from dora_the_mug_finder_bringup.src.utils import text_3d
+from dora_the_mug_finder_bringup.src.utils import text_3d, get_color
 
 # Stores the view 
 view = {
@@ -125,7 +128,7 @@ class ROSHandler:
 
         self.kinect_cloud = open3d_cloud
         
-        print("hi")
+       
 
     def callback_scene(self,data):
         if data.data=='kinect':
@@ -315,6 +318,15 @@ def main():
                 d['length'] = abs(abs(bbox_max[0])-abs(bbox_min[0])) #axis x
                 d['width'] = abs(abs(bbox_max[1])-abs(bbox_min[1])) #axis y
                 d['height'] = abs(abs(bbox_max[2])-abs(bbox_min[2])) #axis z
+
+                # compute mean color of the object
+                mean_color = [0,0,0]
+                for color_object in np.asarray(object_points.colors):
+                    mean_color=mean_color+color_object
+                mean_color = mean_color/np.asarray(object_points.colors).shape[0]
+                d['mean_color']=mean_color
+                
+                # compute mean normal of the object
                 d['bbox_obj'] = d['points'].get_axis_aligned_bounding_box()
                 d['bbox_to_draw'] = o3d.geometry.LineSet.create_from_axis_aligned_bounding_box(d['bbox_obj'])
 
@@ -331,10 +343,13 @@ def main():
             for object_idx, object in enumerate(objects):
                 object['points'] = Transform(-x,y,z,0,0,0).rotate(object['points'],inverse=True)
                 object['points'] = Transform(0,0,0,tx,ty,tz).translate(object['points'])
-
                 object['bbox_to_draw'] = Transform(-x,y,z,0,0,0).rotate(object['bbox_to_draw'],inverse=True)
                 bbox_to_draw = Transform(0,0,0,tx,ty,tz).translate(object['bbox_to_draw'])
                 
+                
+                color_object = get_color(object['mean_color'])
+                print(color_object)
+
                 # Create ROS Message #
                 # Gets the min and max of the bounding box
                 min = bbox_to_draw.get_min_bound() 
@@ -345,11 +360,7 @@ def main():
                 center = object['points'].get_center()
                 objects_3d.center.append(Point(center[0],center[1],center[2]))
                 objects_3d.scene = String(scene_name)
-
-                # Appends each object's properties to the message
-                objects_3d.height.append(Float64(object['height']))
-                objects_3d.width.append(Float64(object['width']))
-                objects_3d.length.append(Float64(object['length']))
+                objects_3d.color.append(String(color_object))
 
                 # Creates the entities to be drawn
                 sphere =o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
