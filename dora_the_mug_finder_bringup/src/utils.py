@@ -65,7 +65,7 @@ def text_3d(text,density=10,font='/usr/share/fonts/truetype/freefont/FreeMono.tt
     img = np.asarray(img)
     img_mask = img[:, :, 0] < 128
     indices = np.indices([*img.shape[0:2], 1])[:, img_mask, 0].reshape(3, -1).T
-
+    
     pcd = o3d.geometry.PointCloud()
     pcd.colors = o3d.utility.Vector3dVector(img[img_mask, :].astype(float) / 255.0)
     pcd.points = o3d.utility.Vector3dVector(indices / 100.0 / density)
@@ -75,15 +75,16 @@ def text_3d(text,density=10,font='/usr/share/fonts/truetype/freefont/FreeMono.tt
 
 def get_color(mean_color):
     
+    # convert to rgb
     mean_color = mean_color*255
-    # convert to hsv
     rgb_value= np.array([[mean_color]], dtype=np.uint8)
-    print(rgb_value)
+
+    # convert to hsv
     hsv = cv2.cvtColor(rgb_value, cv2.COLOR_RGB2HSV)
+    
     # get the hsv value
     H,S,V = cv2.split(hsv)
    
-
     # get the color
     if H < 10 and S > 50:
         color = 'red'

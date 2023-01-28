@@ -333,8 +333,7 @@ def main():
                 if d['z'] > threshold_z and dist < threshold_dist and d['width'] < threshold_width and d['length'] < threshold_length and d['height'] < threshold_height:       
                     # condition of being object: Z center > 0, be close to the reference, not be too big
                     objects.append(d) #Add the dict of this object to the list
-                #print(objects)
-
+             
             #####################################
             # BBox extraction                   #
             #####################################
@@ -348,8 +347,7 @@ def main():
                 
                 
                 color_object = get_color(object['mean_color'])
-                print(color_object)
-
+              
                 # Create ROS Message #
                 # Gets the min and max of the bounding box
                 min = bbox_to_draw.get_min_bound() 
