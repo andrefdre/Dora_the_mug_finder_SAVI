@@ -23,7 +23,7 @@ from sensor_msgs.msg import Image
 
 # Own package imports
 from dora_the_mug_finder_msg.msg import Object , Images
-from dora_the_mug_finder_bringup.src.image_processing import get_matrix_inv, get_iou
+from dora_the_mug_finder_bringup.src.image_processing import get_matrix_inv, get_iou, get_color
 
 class ROSHandler:
 
@@ -112,11 +112,14 @@ class ROSHandler:
                 ########################################
                 # Points & Bbox 3D                     #
                 ########################################
+                
+                # Get the 3D points and bbox 3D
                 points = np.array([[center.x,center.y,center.z] for center in data.center],dtype = np.float64)
                 bbox_3d =np.array( [[[data.corners[idx].x,data.corners[idx+1].y+0.05,data.corners[idx].z],[data.corners[idx+1].x,data.corners[idx].y,data.corners[idx].z]] for idx in range(0,len(data.corners),2)] ,dtype=np.float64)                    
                 
+                # Get the image number
                 image_number = filename.split('/')[-1].split('-')[0]
-                print(image_number)
+                
                 # Apply matriz inverse: points, bbox_3d 
                 matrix_inv = get_matrix_inv(filename_pose,image_number)
     
@@ -138,6 +141,7 @@ class ROSHandler:
                 ########################################
                 # Points & Bbox 2D                     #
                 ########################################
+                
                 # Project the 3D points to the 2D image plane
                 points_2d = cv2.projectPoints(points, np.identity(3), np.zeros(3), camera_matrix, None,)[0]
 
@@ -155,6 +159,7 @@ class ROSHandler:
                 # Line thickness of 5 px
                 thickness = 5
 
+                # initialize the cropped images
                 self.cropped_images = Images()
             
                 # create image
@@ -195,9 +200,9 @@ class ROSHandler:
                 ###############################################
                 # Cropped the image                           #                                    
                 ###############################################
-
+                
                 for idx_object in idx_images_cropped:
-                    image[points_2d[idx_object][0][1]-thickness:points_2d[idx_object][0][1]+thickness,points_2d[idx_object][0][0]-thickness:points_2d[idx_object][0][0]+thickness]=color
+                    #image[points_2d[idx_object][0][1]-thickness:points_2d[idx_object][0][1]+thickness,points_2d[idx_object][0][0]-thickness:points_2d[idx_object][0][0]+thickness]=color
                     width = bbox_2d[idx_object][1][0][0] - bbox_2d[idx_object][0][0][0]
                     height = bbox_2d[idx_object][0][0][1] - bbox_2d[idx_object][1][0][1]
                     cropped_image = image[round(points_2d[idx_object][0][1]-height/2):round(points_2d[idx_object][0][1]+height/2),round(points_2d[idx_object][0][0]-width/2):round(points_2d[idx_object][0][0]+width/2)]
@@ -206,6 +211,8 @@ class ROSHandler:
                     img_cropped = {}
                     img_cropped['idx_object'] = idx_object
                     img_cropped['image'] = cropped_image
+                    img_cropped['color'] = get_color(cropped_image,thickness=5)
+
                     images_dic.append(img_cropped)
                     
                 idx_images_cropped = idx_images_overlap
@@ -215,11 +222,11 @@ class ROSHandler:
         
         # sort list of the dicionary
         images_dic = sorted(images_dic, key=lambda d: d['idx_object'])
-
-
+        
+        # publish the cropped images
         for images in images_dic:
             self.cropped_images.images.append(self.bridge.cv2_to_imgmsg(images['image'], "passthrough"))
-
+            
         self.pub.publish(self.cropped_images)
 
 
