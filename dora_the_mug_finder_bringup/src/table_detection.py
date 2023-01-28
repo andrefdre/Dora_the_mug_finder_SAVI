@@ -123,7 +123,7 @@ class Table():
         self.bbox.color = (1, 0, 0) #Colors bbox lines in red
 
 
-class Transform():    
+class Geometric_Transformation():    
     def __init__(self,x,y,z,tx,ty,tz):
         self.x = x
         self.y = y
