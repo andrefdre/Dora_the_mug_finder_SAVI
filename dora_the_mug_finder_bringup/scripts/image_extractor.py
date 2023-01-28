@@ -11,12 +11,10 @@ from colorama import Fore, Style
 from cv_bridge import CvBridge
 import matplotlib.pyplot as plt
 import numpy as np
-import argparse
 import rospy
 import glob
 import os
 import cv2
-import sys
 import yaml
 
 from sensor_msgs.msg import Image
