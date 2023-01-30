@@ -41,7 +41,7 @@
     <a href="https://github.com/andrefdre/Dora_the_mug_finder_SAVI/wiki"><strong>Explore the Wiki »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/andrefdre/Dora_the_mug_finder_SAVI">View Demo</a>
+    <a href="https://youtu.be/vULnTanHHmM">View Demo</a>
     ·
     <a href="https://github.com/andrefdre/Dora_the_mug_finder_SAVI/issues">Report Bug</a>
     ·
