@@ -38,7 +38,7 @@
   <p align="center">
     Consists on the implementation of a deep neural network to classify objects collected from 3D models or RGB-D cameras
     <br />
-    <a href="https://github.com/andrefdre/Dora_the_mug_finder_SAVI"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/andrefdre/Dora_the_mug_finder_SAVI/wiki"><strong>Explore the Wiki »</strong></a>
     <br />
     <br />
     <a href="https://github.com/andrefdre/Dora_the_mug_finder_SAVI">View Demo</a>
@@ -116,7 +116,7 @@ To use this code, first add the next line in the bashrc or your shell configurat
 export DORA=/home/andre/dora_the_mug_finder
 export PYTHONPATH="$PYTHONPATH:${HOME}/catkin_ws/src/Dora_the_mug_finder_SAVI"
   ```
-Replace the path of DORA to where all the datasets are stored in your computer. You can download them [here](rgbd-dataset.cs.washington.edu/dataset/rgbd-scenes-v2/0).
+Replace the path of DORA to where all the datasets are stored in your computer. You can download them [here](https://rgbd-dataset.cs.washington.edu/).
 
 Afterward, update the shell with the new configuration using:
 ```
@@ -149,7 +149,7 @@ cd ..
 pip install -r requirements.txt
 ```
 
-If you have/want to use a Kinect camera with this project, you can find [here](https://github.com/AutoMecUA/AutoMec-AD/wiki/Users'-guide-to-Software#rgb-camera) how to install all the dependencies needed.
+If you have/want to use a Kinect camera with this project, you can find [here](https://github.com/andrefdre/Dora_the_mug_finder_SAVI/wiki/Instalation#kinect) how to install all the dependencies needed.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -162,7 +162,7 @@ To Train the model, run the code:
 rosrun dora_the_mug_finder_bringup model_train.py -fn <folder_name> -mn <model_name> -n_epochs 50 -batch_size 256 -c 0
 ```
 
-Where the *<folder_name>* and *<model_name>*  should be replaced by the names you want to give. 
+Where the __*<folder_name>*__ and __*<model_name>*__  should be replaced by the names you want to give. 
 
 ***
 ### Run Object extractor and classifier
@@ -170,10 +170,14 @@ To run the detector with previous trained model run the code:
 ```
 roslaunch dora_the_mug_finder_bringup dora_bringup.launch mn:=<model_name> fn:=<folder_name>
 ```
-Where the <folder_name> and <model_name> should be replaced by a name for the model previously set while training. 
+Where the __*<folder_name>*__ and __*<model_name>*__ should be replaced by a name for the model previously set while training. 
 If you want to visualize extracted images run:
 ```
 roslaunch dora_the_mug_finder_bringup dora_bringup.launch mn:=<model_name> fn:=<folder_name> visualize:=True
+```
+It's also possible to add the argument __*audio*__ to initialize audio describing the objects, setting it to true:
+```
+roslaunch dora_the_mug_finder_bringup dora_bringup.launch mn:=<model_name> fn:=<folder_name> audio:=true
 ```
 
 ***
