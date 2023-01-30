@@ -218,14 +218,14 @@ class ROSHandler:
 
                 if len(idx_images_overlap) == 0:
                     break
-        
-        # sort list of the dicionary
-        images_dic = sorted(images_dic, key=lambda d: d['idx_object'])
-        
-        # publish the cropped images
-        for images in images_dic:
-            self.cropped_images.images.append(self.bridge.cv2_to_imgmsg(images['image'], "passthrough"))
             
+            # sort list of the dicionary
+            images_dic = sorted(images_dic, key=lambda d: d['idx_object'])
+            
+            # publish the cropped images
+            for images in images_dic:
+                self.cropped_images.images.append(self.bridge.cv2_to_imgmsg(images['image'], "passthrough"))
+                
         self.pub.publish(self.cropped_images)
 
 
