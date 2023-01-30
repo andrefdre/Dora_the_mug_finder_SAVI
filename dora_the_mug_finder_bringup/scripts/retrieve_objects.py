@@ -61,6 +61,7 @@ class ROSHandler:
         self.filename = self.files_path + '/rgbd-scenes-v2/pc/01.ply'
         os.system('pcl_ply2pcd ' + self.filename + ' pcd_point_cloud.pcd')
         self.point_cloud_original = o3d.io.read_point_cloud('pcd_point_cloud.pcd')
+        self.kinect = False
         self.eps = 0.025
         convert_rgbUint32_to_tuple = lambda rgb_uint32: ((rgb_uint32 & 0x00ff0000)>>16, (rgb_uint32 & 0x0000ff00)>>8, (rgb_uint32 & 0x000000ff))
         convert_rgbFloat_to_tuple = lambda rgb_float: convert_rgbUint32_to_tuple(int(cast(pointer(c_float(rgb_float)), POINTER(c_uint32)).contents.value))
@@ -124,16 +125,15 @@ class ROSHandler:
             open3d_cloud.points = o3d.utility.Vector3dVector(np.array(xyz))
 
         self.kinect_cloud = open3d_cloud
+        if self.kinect==True:
+            self.point_cloud_original = self.kinect_cloud
+            self.eps = 0.07
+            self.scene_number_objects = 'kinect'
         
        
 
     def callback_scene(self,data):
-        if data.data=='kinect':
-            self.scene_name = data.data
-            self.point_cloud_original = self.kinect_cloud
-            self.eps = 0.07
-            self.scene_number_objects = 'kinect'
-        else:
+        if data.data!='kinect':
             self.scene_name = data.data
             scene_number = self.scene_name.split('_')
             self.filename = self.files_path + f'/rgbd-scenes-v2/pc/{scene_number[-1]}.ply'
@@ -145,6 +145,10 @@ class ROSHandler:
             parts = part.split('.')
             scene_number = parts[0]
             self.scene_number_objects = self.scenes_number_objects[scene_number]
+            self.kinect=False
+        else:
+            self.kinect=True
+            self.scene_name = data.data
 
 
 

@@ -3,7 +3,7 @@
     <arg name="frame_id" default="camera"/>
 
     <include file="$(find openni_launch)/launch/openni.launch">
-        <arg name="load_driver" value="false"/>
+        <arg name="depth_registration" value="true"/>
         <arg name="camera" value="$(arg frame_id)"/>
     </include>
 </launch>
