@@ -9,6 +9,7 @@
     <arg name="rviz" default="false" doc="Use rviz to see kinect camera image and pointcloud"/>
     <arg name="bag" default="false" doc="Use previously recorded bag file to test code"/>
     <arg name="audio" default="false" doc="Use audio description to describe scene"/>
+    <arg name="bag_name" doc="Define bag file name inside rosbag folder"/>
     
     <!-- Kinect camera mode -->
     <group if="$(arg kinect)">
@@ -22,7 +23,9 @@
 
     <!-- Bagfile mode-->
     <group if="$(arg bag)">
-        <include file="$(find dora_the_mug_finder_bringup)/include/dora_bag.launch"/>       
+        <include file="$(find dora_the_mug_finder_bringup)/include/dora_bag.launch">       
+            <arg name='bag_file_name' value='$(arg bag_name)'/>
+        </include>
     </group>
 
 

@@ -10,6 +10,6 @@
     <param name="/use_sim_time" value="false"/>
     
     <!-- Read bagfile in loop -->
-    <arg name="bag_file_name" value="kinect_complete"/>
+    <arg name="bag_file_name" default="kinect_complete"/>
     <node pkg="rosbag" type="play" name="rosbag_play" args="--clock -l $(env DORA)/rosbag/$(arg bag_file_name).bag"/>
 </launch>
