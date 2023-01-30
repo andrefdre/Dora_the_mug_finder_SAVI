@@ -84,6 +84,7 @@ class ROSHandler:
                 '14': 4,
         }
         self.scene_number_objects = 5
+        self.audio_wait = 1
                             
 
     def callback_class(self,data):
@@ -146,10 +147,11 @@ class ROSHandler:
             scene_number = parts[0]
             self.scene_number_objects = self.scenes_number_objects[scene_number]
             self.kinect=False
+            self.audio_wait = 1
         else:
             self.kinect=True
             self.scene_name = data.data
-
+            self.audio_wait = 1
 
 
 # Class that will deal with visualization
@@ -421,7 +423,9 @@ def main():
         #################################
         # ROS Publish                   #
         #################################
-        pub.publish(objects_3d) # Publishes the detected objects
+        if ros_handler.audio_wait <= 0:
+            pub.publish(objects_3d) # Publishes the detected objects
+        ros_handler.audio_wait -= 1
         rate.sleep() # Sleeps to if time < rate
 
 

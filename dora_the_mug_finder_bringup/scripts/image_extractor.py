@@ -169,7 +169,8 @@ class ROSHandler:
                 ###############################################
                 # Check the conditions for cropping the image #                                    #
                 ###############################################
-                
+                # padding to the bbox
+                padding=10
                 # check the bbox inside the image
                 h, w, _ = image.shape
                 ymaxs = [ymax[0][0][1] for ymax in bbox_2d]
@@ -178,7 +179,7 @@ class ROSHandler:
                 xmins = [xmin[0][0][0] for xmin in bbox_2d]
                 x_pts = [xmin_pts[0][0] for xmin_pts in points_2d]
                 y_pts = [ymin_pts[0][1] for ymin_pts in points_2d]         
-                if min(ymins) < 0 or min(xmins) < 0 or max(xmaxs) > w or max(ymaxs) > h or min(x_pts) <= 0 or min(y_pts) <= 0:
+                if min(ymins) - padding < 0 or min(xmins) - padding < 0 or max(xmaxs) + padding > w or max(ymaxs) + padding > h or min(x_pts) <= 0 or min(y_pts) <= 0:
                     continue
                 
                 # check IOU bbox
@@ -190,7 +191,7 @@ class ROSHandler:
                         bbx2_2d = bbox_2d[idx2]
                         iou_bbx1 = get_iou(bb1x_2d,bbx2_2d)
                         
-                        if idx1 != idx2 and iou_bbx1 > 0.05 and not idx1 in idx_images_overlap:                     
+                        if idx1 != idx2 and iou_bbx1 > 0.02 and not idx1 in idx_images_overlap:                     
                             idx_images_overlap.append(idx1)
 
                 for idx in idx_images_overlap:
@@ -200,12 +201,11 @@ class ROSHandler:
                 ###############################################
                 # Cropped the image                           #                                    
                 ###############################################
-                
                 for idx_object in idx_images_cropped:
                     #image[points_2d[idx_object][0][1]-thickness:points_2d[idx_object][0][1]+thickness,points_2d[idx_object][0][0]-thickness:points_2d[idx_object][0][0]+thickness]=color
                     width = bbox_2d[idx_object][1][0][0] - bbox_2d[idx_object][0][0][0]
                     height = bbox_2d[idx_object][0][0][1] - bbox_2d[idx_object][1][0][1]
-                    cropped_image = image[round(points_2d[idx_object][0][1]-height/2):round(points_2d[idx_object][0][1]+height/2),round(points_2d[idx_object][0][0]-width/2):round(points_2d[idx_object][0][0]+width/2)]
+                    cropped_image = image[round(points_2d[idx_object][0][1]-height/2)-padding:round(points_2d[idx_object][0][1]+height/2)+padding,round(points_2d[idx_object][0][0]-width/2)-padding:round(points_2d[idx_object][0][0]+width/2)+padding]
                     
                     # dictionary with idx_object and image cropped
                     img_cropped = {}
@@ -277,4 +277,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except IndexError:
+        pass
