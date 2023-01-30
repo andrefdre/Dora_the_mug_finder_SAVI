@@ -188,9 +188,9 @@ It's also possible to use a kinect camera for processing in real time, by adding
 ```
 roslaunch dora_the_mug_finder_bringup dora_bringup.launch mn:=<model_name> fn:=<folder_name> kinect:=true
 ```
-If instead of using point clouds from the dataset, you want to use point clouds acquired from a Kinect stored in a rosbag, just add the argument __*bag*__:
+If instead of using point clouds from the dataset, you want to use point clouds acquired from a Kinect stored in a rosbag, just add the argument __*bag*__ and define the name of the bag file:
 ```
-roslaunch dora_the_mug_finder_bringup dora_bringup.launch mn:=<model_name> fn:=<folder_name> bag:=true
+roslaunch dora_the_mug_finder_bringup dora_bringup.launch mn:=<model_name> fn:=<folder_name> bag:=true bag_name:=<your_bag_file_name>
 ```
 
 To initialize RViz, use the argument __*rviz*__:
