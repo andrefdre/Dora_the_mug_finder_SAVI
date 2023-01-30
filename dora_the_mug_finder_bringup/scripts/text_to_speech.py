@@ -12,6 +12,7 @@ class ROSHandler:
 
     def __init__(self):
         self.scenes_list = []
+        self.first_time = True
 
     def msgReceivedCallback(self,data):
         # Get properties from the message
@@ -26,6 +27,22 @@ class ROSHandler:
         scene_parts = scene.split('_')
         scene_name =scene_parts[0]
         scene_number = scene_parts[-1]
+
+        if self.first_time:
+            first_text = 'Ola, eu soy Dora, la exploradora. Vámos a empezar nuestra aventura.'
+            # Start Google TextToSpeech with the generated text with the voice with indian accent
+            tts = gTTS(text=first_text, lang='es',  tld='com.mx')
+            
+            # Create a temporary audio file with our text
+            filename = '/tmp/temp.mp3'
+            tts.save(filename)
+
+            # Play the audio file 
+            music = pyglet.media.load(filename, streaming=False)
+            music.play()
+            sleep(music.duration) # Prevents from killing #! Not sure if necessary, we may want to kill during audio playback
+            os.remove(filename) # Remove temporary file
+            self.first_time = False
 
 
         if scene_number in self.scenes_list:
