@@ -29,7 +29,7 @@ class ROSHandler:
         scene_number = scene_parts[-1]
 
         if self.first_time:
-            first_text = 'Ola, eu soy Dora, la exploradora. Vámos a empezar nuestra aventura.'
+            first_text = 'Holla, soy Dora la exploradora. Vámos a empezar nuestra aventura?'
             # Start Google TextToSpeech with the generated text with the voice with indian accent
             tts = gTTS(text=first_text, lang='es',  tld='com.mx')
             
