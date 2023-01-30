@@ -193,9 +193,9 @@ If instead of using point clouds from the dataset, you want to use point clouds 
 roslaunch dora_the_mug_finder_bringup dora_bringup.launch mn:=<model_name> fn:=<folder_name> bag:=true
 ```
 
-To initialize RViz to see the bag file, add the argument __*rviz*__:
+To initialize RViz, use the argument __*rviz*__:
 ```
-roslaunch dora_the_mug_finder_bringup dora_bringup.launch mn:=<model_name> fn:=<folder_name> bag:=true rviz:=true
+roslaunch dora_the_mug_finder_bringup dora_bringup.launch mn:=<model_name> fn:=<folder_name> rviz:=true
 ```
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
