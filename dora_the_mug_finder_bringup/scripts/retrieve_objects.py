@@ -17,7 +17,7 @@ import argparse
 import sys
 import os
 import rospy
-from std_msgs.msg import String, Float64
+from std_msgs.msg import String, Float64, Int32
 from sensor_msgs.msg import PointCloud2
 import sensor_msgs.point_cloud2 as pc2
 from ctypes import * # To convert float to uint32
@@ -370,7 +370,7 @@ def main():
                 objects_3d.height.append(Float64(object['height']))
                 objects_3d.width.append(Float64(object['width']))
                 objects_3d.length.append(Float64(object['length']))
-
+                objects_3d.objects_number = Int32(len(objects))
 
                 #####################################
                 # Creates the entities to be drawn  #

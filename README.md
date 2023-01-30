@@ -193,7 +193,7 @@ roslaunch dora_the_mug_finder_bringup dora_bringup.launch mn:=<model_name> fn:=<
 ```
 If instead of using point clouds from the dataset, you want to use point clouds acquired from a Kinect stored in a rosbag, just add the argument __*bag*__:
 ```
-roslaunch dora_the_mug_finder_bringup dora_bringup.launch mn:=<model_name> fn:=<folder_name> kinect:=true bag:=true
+roslaunch dora_the_mug_finder_bringup dora_bringup.launch mn:=<model_name> fn:=<folder_name> bag:=true
 ```
 
 To initialize RViz to see the bag file, add the argument __*rviz*__:
